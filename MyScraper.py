@@ -16,6 +16,6 @@ assert "Python" in driver.title
 
 
 
-# what now
+# what now ~ all good ?
 
 
