@@ -7,6 +7,7 @@
 
 # coppied from
 # https://pypi.org/project/chromedriver-binary/
+# https://www.youtube.com/watch?v=FFDDN1C1MEQ - Learn Selenium Python
 from selenium import webdriver
 import chromedriver_binary # Adds chromedriver binary to path
 
@@ -15,7 +16,13 @@ driver.get("http://www.python.org")
 assert "Python" in driver.title
 
 
+# 20-may-2020
 
-# what now ~ all good ?
+elem = driver.find_element_by_name("q")
+elem.clear()
+elem.send_keys("start")
+driver.find_element_by_name("submit").click()
+
+
 
 
