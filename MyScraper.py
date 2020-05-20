@@ -133,8 +133,26 @@ class Test(unittest.TestCase):
         print("Get data from Cell : ", w.get_cell_data(2, 2))
 
 if __name__ == "__main__":
-    unittest.main()
+    #unittest.main()
 
 
+    driver = webdriver.Chrome()
+    driver.implicitly_wait(30)
+
+ 
+    #driver.get("https://chercher.tech/practice/table")
+    #driver.implicitly_wait(30)
+
+    #w = WebTable(driver.find_element_by_xpath("//table[@id='webtable']"))
+    #print(w.get_table_size())
+
+    driver.get("https://www.trustnet.com/factsheets/o/be80/baillie-gifford-pacific-b-acc")
+    #w = WebTable(driver.find_element_by_xpath("//table"))
+    #print(x)
+    w1 = WebTable(driver.find_element_by_xpath("/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div[1]/div/div[1]/cumulative-performance/div[1]/performance-table/table"))
+    print(w1.get_table_size())
+    print(w1.get_all_data())
+    print("Done!")
 
 
+    #/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div[1]/div/div[1]/cumulative-performance/div[1]/performance-table/table/tbody/tr[2]/td[2]
