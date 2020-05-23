@@ -8,7 +8,9 @@
 # coppied from
 # https://pypi.org/project/chromedriver-binary/
 # https://www.youtube.com/watch?v=FFDDN1C1MEQ - Learn Selenium Python
+# https://selenium-python.readthedocs.io/api.html#module-selenium.webdriver.remote.webdriver
 from selenium import webdriver
+
 import chromedriver_binary # Adds chromedriver binary to path
 
 # ----------------------------- example ------------------------
@@ -132,27 +134,69 @@ class Test(unittest.TestCase):
         print("------------------------------------")
         print("Get data from Cell : ", w.get_cell_data(2, 2))
 
+
+class trustnetInf:
+    """ get funds information from trustnet website     """
+
+    def __init__(self):
+        self.driver = webdriver.Chrome()
+        self.driver.implicitly_wait(30)
+
+    def getFundInf(self, fundUrl):
+        status = self.driver.get(fundUrl)
+        self.driver.implicitly_wait(30)
+        print("Get status: ", status)
+        #print(self.driver.current_url)
+        #print(self.driver.title)
+
+        fundInf = {}
+        return fundInf
+
+
+
 if __name__ == "__main__":
     #unittest.main()
 
 
-    driver = webdriver.Chrome()
-    driver.implicitly_wait(30)
+    #driver = webdriver.Chrome()
+    #driver.implicitly_wait(30)
 
- 
     #driver.get("https://chercher.tech/practice/table")
     #driver.implicitly_wait(30)
 
     #w = WebTable(driver.find_element_by_xpath("//table[@id='webtable']"))
     #print(w.get_table_size())
 
-    driver.get("https://www.trustnet.com/factsheets/o/be80/baillie-gifford-pacific-b-acc")
+    #driver.get("https://www.trustnet.com/factsheets/o/be80/baillie-gifford-pacific-b-acc")
     #w = WebTable(driver.find_element_by_xpath("//table"))
     #print(x)
-    w1 = WebTable(driver.find_element_by_xpath("/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div[1]/div/div[1]/cumulative-performance/div[1]/performance-table/table"))
-    print(w1.get_table_size())
-    print(w1.get_all_data())
-    print("Done!")
+
+    #w1 = WebTable(driver.find_element_by_xpath("/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div[1]/div/div[1]/cumulative-performance/div[1]/performance-table/table"))
+    #print(w1.get_table_size())
+    #print(w1.get_all_data())
+    #print("Done!")
 
 
-    #/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div[1]/div/div[1]/cumulative-performance/div[1]/performance-table/table/tbody/tr[2]/td[2]
+    # start chrom
+    ChromeInstance = trustnetInf()
+    fundInf = ChromeInstance.getFundInf("https://www.trustnet.com/factsheets/o/be80/baillie-gifford-pacific-b-acc")
+
+    fundInf = ChromeInstance.getFundInf("https://www.bbc1.co.uk/")
+    
+
+    # check that information exist
+    #TableXpath = "/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div[1]/div/div[1]/cumulative-performance"
+    #w1 = WebTable(driver.find_element_by_xpath(TableXpath))
+
+
+    #driver.get("https://www.trustnet.com/fund/sectors/focus?universe=O&sector=O%253AFEEXJAP")
+    # Exception has occurred: NoSuchElementException
+    #w1 = WebTable(driver.find_element_by_xpath(TableXpath))
+
+    pass 
+    print("exit Main!")
+
+
+
+
+
