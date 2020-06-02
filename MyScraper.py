@@ -10,6 +10,7 @@
 # https://www.youtube.com/watch?v=FFDDN1C1MEQ - Learn Selenium Python
 # https://selenium-python.readthedocs.io/api.html#module-selenium.webdriver.remote.webdriver
 from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
 
 import chromedriver_binary # Adds chromedriver binary to path
 
@@ -146,11 +147,73 @@ class trustnetInf:
         status = self.driver.get(fundUrl)
         self.driver.implicitly_wait(30)
         print("Get status: ", status)
+
+        _statusOK = True
+        fundInf = {"3m": "NA",
+                   "6m": "NA",
+                   "1y": "NA",
+                   "3y": "NA",
+                   "5y": "NA",
+                   "Quartile": "NA",
+                   "FERisk": "NA"}
         #print(self.driver.current_url)
         #print(self.driver.title)
+        try:
+            TableXpath = "/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div[1]/div/div[1]/cumulative-performance"
+            w1 = WebTable(self.driver.find_element_by_xpath(TableXpath))
+            #print(w1.get_all_data())
+            #row_number = 2 - 1 # get_cell_data has 'row_number = row_number + 1'
+            #for column_number in range(2,7):
+            #    print(w1.get_cell_data(row_number, column_number))
 
-        fundInf = {}
-        return fundInf
+        except NoSuchElementException:
+            print(f"webpage {fundUrl} don't include required performance table")
+            _statusOK = False
+            
+        except Exception as ex:
+            #template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            #message = template.format(type(ex).__name__, ex.args)
+            #print(message)
+            #print(type(ex))    # the exception instance
+            #print(ex.args)     # arguments stored in .args
+            print(ex) 
+            _statusOK = False
+
+        if not _statusOK:
+            return False, fundInf
+
+        # get performance 
+        try:
+            row_number = 2 - 1 # get_cell_data has 'row_number = row_number + 1'
+            fundInf["3m"] = float(w1.get_cell_data(row_number, 2))
+            fundInf["6m"] = float(w1.get_cell_data(row_number, 3))
+            fundInf["1y"] = float(w1.get_cell_data(row_number, 4))
+            fundInf["3y"] = float(w1.get_cell_data(row_number, 5))
+            fundInf["5y"] = float(w1.get_cell_data(row_number, 6))
+
+            fundInf["Quartile"] = int(w1.get_cell_data(4, 2))
+            
+            #print("3,2> ",w1.get_cell_data(4, 2))
+            '/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div[1]/div/div[1]/cumulative-performance/div[1]/performance-table/table/tbody/tr[5]/td[2]/span'
+
+
+            #_riskScoreXpath = '/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div[3]/div/div[2]/fund-details/div/table/tbody/tr[10]/td[2]/span'
+            #<span class="risk_score">72</span>
+
+            A = self.driver.find_element_by_class_name("risk_score")
+            print(type(A))
+            print(A.text)
+
+
+        except Exception as ex:
+            print(f"Failed to get performance for {fundUrl}")
+            print(ex) 
+            return False, fundInf
+
+    
+
+
+        return True, fundInf
 
 
 
@@ -179,9 +242,12 @@ if __name__ == "__main__":
 
     # start chrom
     ChromeInstance = trustnetInf()
-    fundInf = ChromeInstance.getFundInf("https://www.trustnet.com/factsheets/o/be80/baillie-gifford-pacific-b-acc")
+#    Status, fundInf = ChromeInstance.getFundInf("https://www.trustnet.com/factsheets/o/be80/baillie-gifford-pacific-b-acc")
+    Status, fundInf = ChromeInstance.getFundInf("https://www.trustnet.com/factsheets/o/0ycm/jpm-asia-growth-c-acc")
+    print(Status)
+    print(fundInf)
 
-    fundInf = ChromeInstance.getFundInf("https://www.bbc1.co.uk/")
+    #fundInf = ChromeInstance.getFundInf("https://www.bbc1.co.uk/")
     
 
     # check that information exist
