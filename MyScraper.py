@@ -193,17 +193,17 @@ class trustnetInf:
 
             fundInf["Quartile"] = int(w1.get_cell_data(4, 2))
             
-            #print("3,2> ",w1.get_cell_data(4, 2))
-            '/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div[1]/div/div[1]/cumulative-performance/div[1]/performance-table/table/tbody/tr[5]/td[2]/span'
+            # https://www.selenium.dev/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webelement.html
 
+             #<span class="risk_score">72</span>
+            _FERisk = self.driver.find_element_by_class_name("risk_score")
+            fundInf["FERisk"] = int(_FERisk.text)
 
-            #_riskScoreXpath = '/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div[3]/div/div[2]/fund-details/div/table/tbody/tr[10]/td[2]/span'
-            #<span class="risk_score">72</span>
-
-            A = self.driver.find_element_by_class_name("risk_score")
+            #<span ng-if="!perfData.isSector &amp;&amp; perfData.name !== 'Position'" class="fundName bold_text">JPM Asia Growth C Acc</span>
+            '/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div[1]/div/div[1]/cumulative-performance/div[1]/performance-table/div[1]/span[2]'
+            A = self.driver.find_element_by_class_name("fundName")
             print(type(A))
             print(A.text)
-
 
         except Exception as ex:
             print(f"Failed to get performance for {fundUrl}")
@@ -242,7 +242,10 @@ if __name__ == "__main__":
 
     # start chrom
     ChromeInstance = trustnetInf()
-#    Status, fundInf = ChromeInstance.getFundInf("https://www.trustnet.com/factsheets/o/be80/baillie-gifford-pacific-b-acc")
+    Status, fundInf = ChromeInstance.getFundInf("https://www.trustnet.com/factsheets/o/be80/baillie-gifford-pacific-b-acc")
+    print(Status)
+    print(fundInf)
+
     Status, fundInf = ChromeInstance.getFundInf("https://www.trustnet.com/factsheets/o/0ycm/jpm-asia-growth-c-acc")
     print(Status)
     print(fundInf)
