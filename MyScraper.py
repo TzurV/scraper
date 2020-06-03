@@ -14,6 +14,8 @@ from selenium.common.exceptions import NoSuchElementException
 
 import chromedriver_binary # Adds chromedriver binary to path
 
+import sys
+
 # ----------------------------- example ------------------------
 # driver = webdriver.Chrome()
 # driver.get("http://www.python.org")
@@ -149,7 +151,8 @@ class trustnetInf:
         print("Get status: ", status)
 
         _statusOK = True
-        fundInf = {"3m": "NA",
+        fundInf = { "fundName": "NA",
+                    "3m": "NA",
                    "6m": "NA",
                    "1y": "NA",
                    "3y": "NA",
@@ -201,9 +204,8 @@ class trustnetInf:
 
             #<span ng-if="!perfData.isSector &amp;&amp; perfData.name !== 'Position'" class="fundName bold_text">JPM Asia Growth C Acc</span>
             '/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div[1]/div/div[1]/cumulative-performance/div[1]/performance-table/div[1]/span[2]'
-            A = self.driver.find_element_by_class_name("fundName")
-            print(type(A))
-            print(A.text)
+            _fundName = self.driver.find_element_by_class_name("fundName")
+            fundInf["fundName"] = _fundName.text
 
         except Exception as ex:
             print(f"Failed to get performance for {fundUrl}")
@@ -239,7 +241,7 @@ if __name__ == "__main__":
     #print(w1.get_all_data())
     #print("Done!")
 
-
+    #============
     # start chrom
     ChromeInstance = trustnetInf()
     Status, fundInf = ChromeInstance.getFundInf("https://www.trustnet.com/factsheets/o/be80/baillie-gifford-pacific-b-acc")
@@ -264,6 +266,15 @@ if __name__ == "__main__":
 
     pass 
     print("exit Main!")
+
+    with open('FundsUrls.txt', 'r') as fh:
+        for line in fh:
+            line = line.rstrip("\n")
+            print(line)       
+            Status, fundInf = ChromeInstance.getFundInf(line)
+            print(fundInf)
+    
+
 
 
 
