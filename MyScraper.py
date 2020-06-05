@@ -14,7 +14,36 @@ from selenium.common.exceptions import NoSuchElementException
 
 import chromedriver_binary # Adds chromedriver binary to path
 
+import pandas as pd
 import sys
+#============================================
+# (Scraper) C:\Users\...\scraper>pip freeze
+# astroid==2.4.0
+# certifi==2020.4.5.1
+# cffi==1.14.0
+# chromedriver-binary==83.0.4103.39.0
+# colorama==0.4.3
+# cryptography==2.9.2
+# idna==2.9
+# isort==4.3.21
+# lazy-object-proxy==1.4.3
+# mccabe==0.6.1
+# numpy==1.18.5
+# pandas==1.0.4
+# pycparser==2.20
+# pylint==2.5.0
+# pyOpenSSL==19.1.0
+# PySocks==1.7.1
+# python-dateutil==2.8.1
+# pytz==2020.1
+# selenium==3.141.0
+# six==1.14.0
+# toml==0.10.0
+# typed-ast==1.4.1
+# urllib3==1.25.8
+# win-inet-pton==1.1.0
+# wincertstore==0.2
+# wrapt==1.11.2
 
 # ----------------------------- example ------------------------
 # driver = webdriver.Chrome()
@@ -267,6 +296,11 @@ if __name__ == "__main__":
     pass 
     print("exit Main!")
 
+
+    column_names = ["date", "fundName", "Quartile", "FERisk", "3m", "6m", "1y", "3y", "5y"]
+    df = pd.DataFrame(columns = column_names)
+
+ 
     with open('FundsUrls.txt', 'r') as fh:
         for line in fh:
             line = line.rstrip("\n")
