@@ -331,7 +331,7 @@ if __name__ == "__main__":
     ## https://chrisalbon.com/python/data_wrangling/pandas_dataframe_importing_csv/
     allFundsInf.to_csv("C:\\Users\\tzurv\\python\\VScode\\scraper\\FundsInf.csv", sep='\t', float_format='%.2f')
 
-    allFundsInf_Verify = pd.read_csv('C:\\Users\\tzurv\\python\\VScode\\scraper\\FundsInf.csv')
+    allFundsInf_Verify = pd.read_csv('C:\\Users\\tzurv\\python\\VScode\\scraper\\FundsInf.csv', sep='\t')
     print(allFundsInf_Verify)
 
     sys.exit(0)
