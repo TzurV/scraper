@@ -15,6 +15,8 @@ from selenium.common.exceptions import NoSuchElementException
 import chromedriver_binary # Adds chromedriver binary to path
 
 import pandas as pd
+from datetime import datetime
+
 import sys
 #============================================
 # (Scraper) C:\Users\...\scraper>pip freeze
@@ -45,6 +47,11 @@ import sys
 # wincertstore==0.2
 # wrapt==1.11.2
 
+#https://pip.pypa.io/en/stable/reference/pip_freeze/
+#$ env1/bin/pip freeze > requirements.txt
+#$ env2/bin/pip install -r requirements.txt
+
+
 # ----------------------------- example ------------------------
 # driver = webdriver.Chrome()
 # driver.get("http://www.python.org")
@@ -68,6 +75,11 @@ import unittest
 
 # https://www.techbeamers.com/handling-html-tables-selenium-webdriver/
 # https://chercher.tech/python/table-selenium-python
+
+# globals
+column_names = ["date", "fundName", "Quartile", "FERisk", "3m", "6m", "1y", "3y", "5y"]
+Empty_fund_df = pd.DataFrame(columns = column_names)
+
 
 #--------------------------------
 #from selenium import webdriver
@@ -147,6 +159,9 @@ class Test(unittest.TestCase):
         driver = webdriver.Chrome()
         driver.implicitly_wait(30)
 
+        #/html/body/div[1]/div/div[1]/div/button[2]
+
+
         driver.get("https://chercher.tech/practice/table")
         w = WebTable(driver.find_element_by_xpath("//table[@id='webtable']"))
 
@@ -171,25 +186,22 @@ class trustnetInf:
     """ get funds information from trustnet website     """
 
     def __init__(self):
+        self._first = True
         self.driver = webdriver.Chrome()
         self.driver.implicitly_wait(30)
 
     def getFundInf(self, fundUrl):
         status = self.driver.get(fundUrl)
-        self.driver.implicitly_wait(30)
+        self.driver.implicitly_wait(10)
         print("Get status: ", status)
 
+        if self._first :
+            input("\n ------------------ \n >> Set Agree options befor provessing: \n ")
+            self._first = False
+
         _statusOK = True
-        fundInf = { "fundName": "NA",
-                    "3m": "NA",
-                   "6m": "NA",
-                   "1y": "NA",
-                   "3y": "NA",
-                   "5y": "NA",
-                   "Quartile": "NA",
-                   "FERisk": "NA"}
-        #print(self.driver.current_url)
-        #print(self.driver.title)
+        fundInf = Empty_fund_df.copy()
+ 
         try:
             TableXpath = "/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div[1]/div/div[1]/cumulative-performance"
             w1 = WebTable(self.driver.find_element_by_xpath(TableXpath))
@@ -216,35 +228,48 @@ class trustnetInf:
 
         # get performance 
         try:
-            row_number = 2 - 1 # get_cell_data has 'row_number = row_number + 1'
-            fundInf["3m"] = float(w1.get_cell_data(row_number, 2))
-            fundInf["6m"] = float(w1.get_cell_data(row_number, 3))
-            fundInf["1y"] = float(w1.get_cell_data(row_number, 4))
-            fundInf["3y"] = float(w1.get_cell_data(row_number, 5))
-            fundInf["5y"] = float(w1.get_cell_data(row_number, 6))
+            fundDict =  {   "date":"NA",
+                            "fundName": "NA",
+                            "3m": "NA",
+                            "6m": "NA",
+                            "1y": "NA",
+                            "3y": "NA",
+                            "5y": "NA",
+                            "Quartile": "NA",
+                            "FERisk": "NA"}
 
-            fundInf["Quartile"] = int(w1.get_cell_data(4, 2))
+            row_number = 2 - 1 # get_cell_data has 'row_number = row_number + 1'
+            fundDict["3m"] = float(w1.get_cell_data(row_number, 2))
+            fundDict["6m"] = float(w1.get_cell_data(row_number, 3))
+            fundDict["1y"] = float(w1.get_cell_data(row_number, 4))
+            fundDict["3y"] = float(w1.get_cell_data(row_number, 5))
+            fundDict["5y"] = float(w1.get_cell_data(row_number, 6))
+
+            fundDict["Quartile"] = int(w1.get_cell_data(4, 2))
             
             # https://www.selenium.dev/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webelement.html
 
              #<span class="risk_score">72</span>
             _FERisk = self.driver.find_element_by_class_name("risk_score")
-            fundInf["FERisk"] = int(_FERisk.text)
+            fundDict["FERisk"] = int(_FERisk.text)
 
             #<span ng-if="!perfData.isSector &amp;&amp; perfData.name !== 'Position'" class="fundName bold_text">JPM Asia Growth C Acc</span>
             '/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div[1]/div/div[1]/cumulative-performance/div[1]/performance-table/div[1]/span[2]'
             _fundName = self.driver.find_element_by_class_name("fundName")
-            fundInf["fundName"] = _fundName.text
+            fundDict["fundName"] = _fundName.text
+
 
         except Exception as ex:
             print(f"Failed to get performance for {fundUrl}")
             print(ex) 
             return False, fundInf
 
+        # add the data
+        print(fundDict)
+        
     
-
-
-        return True, fundInf
+#        return True, fundInf.append(fundDict, ignore_index=True)
+        return True, pd.DataFrame(fundDict, index=[0])
 
 
 
@@ -270,16 +295,46 @@ if __name__ == "__main__":
     #print(w1.get_all_data())
     #print("Done!")
 
+    #----------------------
+    # Get current time date  
+    #https://docs.python.org/3/library/datetime.html
+    now = datetime.now()
+
+    current_time = now.strftime("%d/%m/%y %H:%M")
+    print("Current Time =", current_time)
+
+    # collect all funds information
+    allFundsInf = Empty_fund_df.copy()
+
+
     #============
     # start chrom
+    
     ChromeInstance = trustnetInf()
     Status, fundInf = ChromeInstance.getFundInf("https://www.trustnet.com/factsheets/o/be80/baillie-gifford-pacific-b-acc")
     print(Status)
     print(fundInf)
+    if Status and not fundInf.empty:
+        fundInf.loc[0, 'date'] = current_time
+        allFundsInf = allFundsInf.append(fundInf, ignore_index=True)
+        #allFundsInf = allFundsInf_tmp.copy()
 
     Status, fundInf = ChromeInstance.getFundInf("https://www.trustnet.com/factsheets/o/0ycm/jpm-asia-growth-c-acc")
     print(Status)
     print(fundInf)
+    if Status and not fundInf.empty:
+        fundInf.loc[0, 'date'] = current_time
+        allFundsInf = allFundsInf.append(fundInf, ignore_index=True)
+
+    print(allFundsInf)
+
+    ## https://chrisalbon.com/python/data_wrangling/pandas_dataframe_importing_csv/
+    allFundsInf.to_csv("C:\\Users\\tzurv\\python\\VScode\\scraper\\FundsInf.csv", sep='\t', float_format='%.2f')
+
+    allFundsInf_Verify = pd.read_csv('C:\\Users\\tzurv\\python\\VScode\\scraper\\FundsInf.csv')
+    print(allFundsInf_Verify)
+
+    sys.exit(0)
 
     #fundInf = ChromeInstance.getFundInf("https://www.bbc1.co.uk/")
     
@@ -295,10 +350,6 @@ if __name__ == "__main__":
 
     pass 
     print("exit Main!")
-
-
-    column_names = ["date", "fundName", "Quartile", "FERisk", "3m", "6m", "1y", "3y", "5y"]
-    df = pd.DataFrame(columns = column_names)
 
  
     with open('FundsUrls.txt', 'r') as fh:
