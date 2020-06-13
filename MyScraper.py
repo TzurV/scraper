@@ -196,6 +196,14 @@ class Test(unittest.TestCase):
         print("------------------------------------")
         print("Get data from Cell : ", w.get_cell_data(2, 2))
 
+def is_number(n):
+    try:
+        float(n)   # Type-casting the string to `float`.
+                   # If string is not a valid `float`, 
+                   # it'll raise `ValueError` exception
+    except ValueError:
+        return False
+    return True
 
 class trustnetInf:
     """ get funds information from trustnet website     """
@@ -263,11 +271,15 @@ class trustnetInf:
             fundDict["6m"] = float(w1.get_cell_data(row_number, 3))
             fundDict["1y"] = float(w1.get_cell_data(row_number, 4))
 
-            if w1.check_cell_data(row_number, 5):
-                fundDict["3y"] = float(w1.get_cell_data(row_number, 5))
+            #if w1.check_cell_data(row_number, 5):
+            _3y = w1.get_cell_data(row_number, 4)
+            if is_number(_3y):
+                fundDict["3y"] = float(_3y)
 
-            if w1.check_cell_data(row_number, 6):
-                fundDict["5y"] = float(w1.get_cell_data(row_number, 6))
+            #if w1.check_cell_data(row_number, 6):
+            _5y = w1.get_cell_data(row_number, 6)
+            if is_number(_5y):
+                fundDict["5y"] = float(_5y)
 
             if w1.check_cell_data(4,2):
                 fundDict["Quartile"] = int(w1.get_cell_data(4, 2))
