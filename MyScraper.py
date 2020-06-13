@@ -160,6 +160,9 @@ class WebTable:
 
         return True
 
+    def get_text(self):
+        return self.table.text
+
     def get_cell_data(self, row_number, column_number):
         if(row_number == 0):
             raise Exception("Row number starts from 1")
@@ -224,10 +227,13 @@ class trustnetInf:
 
         _statusOK = True
         fundInf = Empty_fund_df.copy()
- 
+
+        #/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div/div/div[2]/cumulative-performance/div[1]/performance-table/table
+
         try:
             TableXpath = "/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div[1]/div/div[1]/cumulative-performance"
             w1 = WebTable(self.driver.find_element_by_xpath(TableXpath))
+            print(w1.get_text())
             #print(w1.get_all_data())
             #row_number = 2 - 1 # get_cell_data has 'row_number = row_number + 1'
             #for column_number in range(2,7):
@@ -245,6 +251,31 @@ class trustnetInf:
             #print(ex.args)     # arguments stored in .args
             print(ex) 
             _statusOK = False
+
+        if not _statusOK:
+            _statusOK = True
+
+            try:
+                TableXpath = "/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div/div/div[2]/cumulative-performance"
+                w1 = WebTable(self.driver.find_element_by_xpath(TableXpath))
+                print(w1.get_text())
+                #print(w1.get_all_data())
+                #row_number = 2 - 1 # get_cell_data has 'row_number = row_number + 1'
+                #for column_number in range(2,7):
+                #    print(w1.get_cell_data(row_number, column_number))
+
+            except NoSuchElementException:
+                print(f"webpage {fundUrl} don't include required performance table")
+                _statusOK = False
+                
+            except Exception as ex:
+                #template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                #message = template.format(type(ex).__name__, ex.args)
+                #print(message)
+                #print(type(ex))    # the exception instance
+                #print(ex.args)     # arguments stored in .args
+                print(ex) 
+                _statusOK = False
 
         if not _statusOK:
             return False, fundInf
@@ -354,7 +385,7 @@ if __name__ == "__main__":
         #   https://www.trustnet.com/factsheets/o/ngpb/baillie-gifford-positive-change-b-acc
         #   https://www.trustnet.com/factsheets/o/nbh5/lindsell-train-global-equity-b-gbp
 
-        url = "https://www.trustnet.com/factsheets/o/be80/baillie-gifford-pacific-b-acc"
+        url = "https://www.trustnet.com/factsheets/o/k5lq/fidelity-global-health-care"
         Status, fundInf = ChromeInstance.getFundInf(url)
         print(Status)
         print(fundInf)
