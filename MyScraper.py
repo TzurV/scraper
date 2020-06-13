@@ -354,19 +354,23 @@ if __name__ == "__main__":
         #   https://www.trustnet.com/factsheets/o/ngpb/baillie-gifford-positive-change-b-acc
         #   https://www.trustnet.com/factsheets/o/nbh5/lindsell-train-global-equity-b-gbp
 
-        Status, fundInf = ChromeInstance.getFundInf("https://www.trustnet.com/factsheets/o/be80/baillie-gifford-pacific-b-acc")
+        url = "https://www.trustnet.com/factsheets/o/be80/baillie-gifford-pacific-b-acc"
+        Status, fundInf = ChromeInstance.getFundInf(url)
         print(Status)
         print(fundInf)
         if Status and not fundInf.empty:
             fundInf.loc[0, 'date'] = current_time
+            fundInf.loc[0, 'url'] = url
             allFundsInf = allFundsInf.append(fundInf, ignore_index=True)
             #allFundsInf = allFundsInf_tmp.copy()
 
-        Status, fundInf = ChromeInstance.getFundInf("https://www.trustnet.com/factsheets/o/ngpb/baillie-gifford-positive-change-b-acc")
+        url = "https://www.trustnet.com/factsheets/o/ngpb/baillie-gifford-positive-change-b-acc"
+        Status, fundInf = ChromeInstance.getFundInf(url)
         print(Status)
         print(fundInf)
         if Status and not fundInf.empty:
             fundInf.loc[0, 'date'] = current_time
+            fundInf.loc[0, 'url'] = url
             allFundsInf = allFundsInf.append(fundInf, ignore_index=True)
 
         print(allFundsInf)
@@ -382,13 +386,14 @@ if __name__ == "__main__":
  
     # loop over a list in a file
     with open('FundsUrls.txt', 'r') as fh:
-        for line in fh:
-            line = line.rstrip("\n")
-            print(line)       
-            Status, fundInf = ChromeInstance.getFundInf(line)
+        for url in fh:
+            url = url.rstrip("\n")
+            print(url)       
+            Status, fundInf = ChromeInstance.getFundInf(url)
             #print(fundInf)
             if Status and not fundInf.empty:
                 fundInf.loc[0, 'date'] = current_time
+                fundInf.loc[0, 'url'] = url
                 allFundsInf = allFundsInf.append(fundInf, ignore_index=True)
                 print(allFundsInf)
 
