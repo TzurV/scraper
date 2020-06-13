@@ -216,6 +216,46 @@ class trustnetInf:
         self.driver = webdriver.Chrome()
         self.driver.implicitly_wait(30)
 
+
+    def getFundInf_v2(self, fundUrl):
+
+        status = self.driver.get(fundUrl)
+        self.driver.implicitly_wait(10)
+        print("Get status: ", status)
+
+        if self._first :
+            input("\n ------------------ \n >> Set Agree options befor provessing: \n ")
+            self._first = False
+
+        _statusOK = True
+        fundInf = Empty_fund_df.copy()
+
+        try:
+            #_TableElement = self.driver.find_element_by_class_name("data_table")
+            _TableElement = self.driver.find_element_by_class_name("chart_legends")
+            
+            print(type(_TableElement))
+            print(_TableElement.text)
+
+            #TableXpath = "/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div[1]/div/div[1]/cumulative-performance"
+            #w1 = WebTable(self.driver.find_element_by_xpath(TableXpath))
+            #print(w1.get_text())
+            #print(w1.get_all_data())
+            #row_number = 2 - 1 # get_cell_data has 'row_number = row_number + 1'
+            #for column_number in range(2,7):
+            #    print(w1.get_cell_data(row_number, column_number))
+
+        except NoSuchElementException:
+            print(f"webpage {fundUrl} don't include required performance table")
+            _statusOK = False
+            
+        except Exception as ex:
+            print(ex) 
+            _statusOK = False
+
+        return False, fundInf
+
+
     def getFundInf(self, fundUrl):
         status = self.driver.get(fundUrl)
         self.driver.implicitly_wait(10)
@@ -386,7 +426,7 @@ if __name__ == "__main__":
         #   https://www.trustnet.com/factsheets/o/nbh5/lindsell-train-global-equity-b-gbp
 
         url = "https://www.trustnet.com/factsheets/o/k5lq/fidelity-global-health-care"
-        Status, fundInf = ChromeInstance.getFundInf(url)
+        Status, fundInf = ChromeInstance.getFundInf_v2(url)
         print(Status)
         print(fundInf)
         if Status and not fundInf.empty:
@@ -396,7 +436,7 @@ if __name__ == "__main__":
             #allFundsInf = allFundsInf_tmp.copy()
 
         url = "https://www.trustnet.com/factsheets/o/ngpb/baillie-gifford-positive-change-b-acc"
-        Status, fundInf = ChromeInstance.getFundInf(url)
+        Status, fundInf = ChromeInstance.getFundInf_v2(url)
         print(Status)
         print(fundInf)
         if Status and not fundInf.empty:
