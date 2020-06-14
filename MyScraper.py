@@ -298,7 +298,8 @@ class trustnetInf:
                 pass
             
             # success 
-            return True, pd.DataFrame(fundDict, index=[0])
+            finally:
+                return True, pd.DataFrame(fundDict, index=[0])
 
         # failed 
         return False, _fundInf
@@ -467,13 +468,13 @@ if __name__ == "__main__":
     ChromeInstance = trustnetInf()
 
     # dev  case for 2 funds
-    if True:
+    if False:
         # test 
         #   https://www.trustnet.com/factsheets/o/k5lq/fidelity-global-health-care
         #   https://www.trustnet.com/factsheets/o/ngpb/baillie-gifford-positive-change-b-acc
         #   https://www.trustnet.com/factsheets/o/nbh5/lindsell-train-global-equity-b-gbp
 
-        url = "https://www.trustnet.com/factsheets/o/k5lq/fidelity-global-health-care"
+        url = "https://www.trustnet.com/factsheets/o/nbh5/lindsell-train-global-equity-b-gbp"
         Status, fundInf = ChromeInstance.getFundInf_v2(url)
         print(Status)
         print(fundInf)
@@ -508,7 +509,7 @@ if __name__ == "__main__":
         for url in fh:
             url = url.rstrip("\n")
             print(url)       
-            Status, fundInf = ChromeInstance.getFundInf(url)
+            Status, fundInf = ChromeInstance.getFundInf_v2(url)
             #print(fundInf)
             if Status and not fundInf.empty:
                 fundInf.loc[0, 'date'] = current_time
