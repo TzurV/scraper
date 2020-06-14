@@ -20,6 +20,8 @@ import re
 
 
 import sys
+import time
+
 #============================================
 # (Scraper) C:\Users\...\scraper>pip freeze
 # astroid==2.4.0
@@ -221,8 +223,17 @@ class trustnetInf:
 
     def getFundInf_v2(self, fundUrl):
 
+        if not self._first:
+            # open new blank tab
+            self.driver.execute_script("window.open();")
+            time.sleep(5)
+
+            # switch to the new window which is second in window_handles array
+            self.driver.switch_to.window(self.driver.window_handles[-1])   
+
+
         status = self.driver.get(fundUrl)
-        self.driver.implicitly_wait(10)
+        self.driver.implicitly_wait(30)
         print("Get status: ", status)
 
         if self._first :
@@ -233,6 +244,8 @@ class trustnetInf:
     
         # empty dataFrame
         _fundInf = Empty_fund_df.copy()
+
+        print("Check point 1 ! ")
 
         # dictionary for gathering information from web page
         fundDict =  {   "date":"NA",
@@ -245,9 +258,11 @@ class trustnetInf:
                         "Quartile": "NA",
                         "FERisk": "NA"}
 
+        print("Check point 2 ! ")
+        time.sleep(5)
         try:
             _notFound = True
-
+            self.driver.implicitly_wait(1)
             _AllTableElement = self.driver.find_elements_by_class_name("data_table")
             
             for _TableElement in _AllTableElement:
@@ -255,7 +270,9 @@ class trustnetInf:
                 #print(_TableElement.text)
 
                 if re.search('Quartile Ranking', _TableElement.text):
+                    # found table
                     _notFound = False
+                    print(">> found the table! ")
 
                     # get fund name
                     _fundName = self.driver.find_element_by_class_name("fundName")
@@ -289,17 +306,19 @@ class trustnetInf:
                     if is_number(valuesList[2]):
                         fundDict["Quartile"] = int(valuesList[2])
 
-            try:
-                #<span class="risk_score">72</span>
-                _FERisk = self.driver.find_element_by_class_name("risk_score")
-                fundDict["FERisk"] = int(_FERisk.text)
+            print("\t>>> Got performance ! ")
+            # try:
+            #     #<span class="risk_score">72</span>
+            #     _FERisk = self.driver.find_element_by_class_name("risk_score")
+            #     fundDict["FERisk"] = int(_FERisk.text)
+            #     print("\t\t>>>> Got Risk score ! ")
         
-            except NoSuchElementException:  #spelling error making this code not work as expected
-                pass
+            # except NoSuchElementException:  #spelling error making this code not work as expected
+            #     pass
             
             # success 
-            finally:
-                return True, pd.DataFrame(fundDict, index=[0])
+            #finally:
+            return True, pd.DataFrame(fundDict, index=[0])
 
         # failed 
         return False, _fundInf
@@ -474,7 +493,7 @@ if __name__ == "__main__":
         #   https://www.trustnet.com/factsheets/o/ngpb/baillie-gifford-positive-change-b-acc
         #   https://www.trustnet.com/factsheets/o/nbh5/lindsell-train-global-equity-b-gbp
 
-        url = "https://www.trustnet.com/factsheets/o/nbh5/lindsell-train-global-equity-b-gbp"
+        url = "https://www.trustnet.com/factsheets/o/ngpb/baillie-gifford-positive-change-b-acc"
         Status, fundInf = ChromeInstance.getFundInf_v2(url)
         print(Status)
         print(fundInf)
