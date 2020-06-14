@@ -267,9 +267,10 @@ class trustnetInf:
             
             for _TableElement in _AllTableElement:
                 #print(type(_TableElement))
-                #print(_TableElement.text)
 
-                if re.search('Quartile Ranking', _TableElement.text):
+                #if re.search('Quartile Ranking', _TableElement.text):
+                if re.search('3 m 6 m', _TableElement.text):
+                    print(_TableElement.text)
                     # found table
                     _notFound = False
                     print(">> found the table! ")
@@ -307,18 +308,18 @@ class trustnetInf:
                         fundDict["Quartile"] = int(valuesList[2])
 
             print("\t>>> Got performance ! ")
-            # try:
+            try:
             #     #<span class="risk_score">72</span>
-            #     _FERisk = self.driver.find_element_by_class_name("risk_score")
-            #     fundDict["FERisk"] = int(_FERisk.text)
-            #     print("\t\t>>>> Got Risk score ! ")
+                _FERisk = self.driver.find_element_by_class_name("risk_score")
+                fundDict["FERisk"] = int(_FERisk.text)
+                print("\t\t>>>> Got Risk score ! ")
         
-            # except NoSuchElementException:  #spelling error making this code not work as expected
-            #     pass
+            except NoSuchElementException:  
+                pass
             
             # success 
-            #finally:
-            return True, pd.DataFrame(fundDict, index=[0])
+            finally:
+                return True, pd.DataFrame(fundDict, index=[0])
 
         # failed 
         return False, _fundInf
@@ -450,25 +451,6 @@ class trustnetInf:
 if __name__ == "__main__":
     #unittest.main()
 
-
-    #driver = webdriver.Chrome()
-    #driver.implicitly_wait(30)
-
-    #driver.get("https://chercher.tech/practice/table")
-    #driver.implicitly_wait(30)
-
-    #w = WebTable(driver.find_element_by_xpath("//table[@id='webtable']"))
-    #print(w.get_table_size())
-
-    #driver.get("https://www.trustnet.com/factsheets/o/be80/baillie-gifford-pacific-b-acc")
-    #w = WebTable(driver.find_element_by_xpath("//table"))
-    #print(x)
-
-    #w1 = WebTable(driver.find_element_by_xpath("/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div[1]/div/div[1]/cumulative-performance/div[1]/performance-table/table"))
-    #print(w1.get_table_size())
-    #print(w1.get_all_data())
-    #print("Done!")
-
     #----------------------
     # Get current time date  
     #https://docs.python.org/3/library/datetime.html
@@ -476,6 +458,7 @@ if __name__ == "__main__":
 
     current_time = now.strftime("%d/%m/%y %H:%M")
     print("Current Time =", current_time)
+    dateStamp = now.strftime("%Y%m%d")
 
     # collect all funds information
     allFundsInf = Empty_fund_df.copy()
@@ -487,7 +470,7 @@ if __name__ == "__main__":
     ChromeInstance = trustnetInf()
 
     # dev  case for 2 funds
-    if False:
+    if True:
         # test 
         #   https://www.trustnet.com/factsheets/o/k5lq/fidelity-global-health-care
         #   https://www.trustnet.com/factsheets/o/ngpb/baillie-gifford-positive-change-b-acc
@@ -524,22 +507,33 @@ if __name__ == "__main__":
         sys.exit(0)
  
     # loop over a list in a file
+    totURLs = 0
+    totSuccessful = 0
     with open('FundsUrls.txt', 'r') as fh:
         for url in fh:
+            totURLs += 1 
             url = url.rstrip("\n")
             print(url)       
             Status, fundInf = ChromeInstance.getFundInf_v2(url)
-            #print(fundInf)
+            
             if Status and not fundInf.empty:
+                totSuccessful += 1
                 fundInf.loc[0, 'date'] = current_time
                 fundInf.loc[0, 'url'] = url
                 allFundsInf = allFundsInf.append(fundInf, ignore_index=True)
                 print(allFundsInf)
 
+
     # save all funds  information 
     ## https://chrisalbon.com/python/data_wrangling/pandas_dataframe_importing_csv/
-    allFundsInf.to_csv("C:\\Users\\tzurv\\python\\VScode\\scraper\\FundsInf.csv", sep='\t', float_format='%.2f')
+    fileName = "C:\\Users\\tzurv\\python\\VScode\\scraper\\" + dateStamp + "_FundsInf.csv"
+    print(f"Savinf information to {fileName}")
+    allFundsInf.to_csv(fileName, sep=',', float_format='%.2f')
 
+    if not totURLs == totSuccessful:
+        print('#'*50)
+        print(f"# Not all data collected. File includes {totSuccessful} out of {totURLs} urls in the list #")
+        print('#'*50)
 
 
 
