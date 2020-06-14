@@ -231,7 +231,6 @@ class trustnetInf:
             # switch to the new window which is second in window_handles array
             self.driver.switch_to.window(self.driver.window_handles[-1])   
 
-
         status = self.driver.get(fundUrl)
         self.driver.implicitly_wait(30)
         print("Get status: ", status)
@@ -270,10 +269,10 @@ class trustnetInf:
 
                 #if re.search('Quartile Ranking', _TableElement.text):
                 if re.search('3 m 6 m', _TableElement.text):
-                    print(_TableElement.text)
+                    #print(_TableElement.text)
                     # found table
                     _notFoundTable = False
-                    print(">> found the table! ")
+                    #print(">> found the table! ")
 
                     # get fund name
                     _fundName = self.driver.find_element_by_class_name("fundName")
@@ -305,7 +304,7 @@ class trustnetInf:
                 l += 1
                 valuesList = line.split(' ')
                 
-                print(l, " ",valuesList)
+                #print(l, " ",valuesList)
 
                 if l == 1:
                     for p, key in zip(range(5), ["3m", "6m", "1y", "3y", "5y"]):
@@ -313,7 +312,7 @@ class trustnetInf:
                         if is_number(valuesList[p]):
                             fundDict[key] = float(valuesList[p])                
 
-                if l == 3:
+                if re.search('Quartile Ranking', line):
                     if is_number(valuesList[2]):
                         fundDict["Quartile"] = int(valuesList[2])
 
@@ -353,21 +352,12 @@ class trustnetInf:
             TableXpath = "/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div[1]/div/div[1]/cumulative-performance"
             w1 = WebTable(self.driver.find_element_by_xpath(TableXpath))
             print(w1.get_text())
-            #print(w1.get_all_data())
-            #row_number = 2 - 1 # get_cell_data has 'row_number = row_number + 1'
-            #for column_number in range(2,7):
-            #    print(w1.get_cell_data(row_number, column_number))
 
         except NoSuchElementException:
             print(f"webpage {fundUrl} don't include required performance table")
             _statusOK = False
             
         except Exception as ex:
-            #template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-            #message = template.format(type(ex).__name__, ex.args)
-            #print(message)
-            #print(type(ex))    # the exception instance
-            #print(ex.args)     # arguments stored in .args
             print(ex) 
             _statusOK = False
 
@@ -378,21 +368,12 @@ class trustnetInf:
                 TableXpath = "/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div/div/div[2]/cumulative-performance"
                 w1 = WebTable(self.driver.find_element_by_xpath(TableXpath))
                 print(w1.get_text())
-                #print(w1.get_all_data())
-                #row_number = 2 - 1 # get_cell_data has 'row_number = row_number + 1'
-                #for column_number in range(2,7):
-                #    print(w1.get_cell_data(row_number, column_number))
 
             except NoSuchElementException:
                 print(f"webpage {fundUrl} don't include required performance table")
                 _statusOK = False
                 
             except Exception as ex:
-                #template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-                #message = template.format(type(ex).__name__, ex.args)
-                #print(message)
-                #print(type(ex))    # the exception instance
-                #print(ex.args)     # arguments stored in .args
                 print(ex) 
                 _statusOK = False
 
@@ -480,7 +461,7 @@ if __name__ == "__main__":
     ChromeInstance = trustnetInf()
 
     # dev  case for 2 funds
-    if True:
+    if False:
         # test 
         #   https://www.trustnet.com/factsheets/o/k5lq/fidelity-global-health-care
         #   https://www.trustnet.com/factsheets/o/ngpb/baillie-gifford-positive-change-b-acc
