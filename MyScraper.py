@@ -261,7 +261,7 @@ class trustnetInf:
         print("Check point 2 ! ")
         time.sleep(5)
         try:
-            _notFound = True
+            _notFoundTable = True
             self.driver.implicitly_wait(1)
             _AllTableElement = self.driver.find_elements_by_class_name("data_table")
             
@@ -272,7 +272,7 @@ class trustnetInf:
                 if re.search('3 m 6 m', _TableElement.text):
                     print(_TableElement.text)
                     # found table
-                    _notFound = False
+                    _notFoundTable = False
                     print(">> found the table! ")
 
                     # get fund name
@@ -290,20 +290,30 @@ class trustnetInf:
             _statusOK = False
 
         # gather information
-        if not _notFound and _statusOK:
+        _found_3m_6m = False
+        if not _notFoundTable and _statusOK:
             l = 0
+
             for line in _TableElement.text.split('\n'):
+
+                if  re.search('3 m 6 m', line):
+                    _found_3m_6m = True
+                    continue
+                elif not _found_3m_6m:
+                    continue
+
                 l += 1
                 valuesList = line.split(' ')
-                #print(l, " ",valuesList)
+                
+                print(l, " ",valuesList)
 
-                if l == 2:
+                if l == 1:
                     for p, key in zip(range(5), ["3m", "6m", "1y", "3y", "5y"]):
                         #print(p, " ", key)
                         if is_number(valuesList[p]):
                             fundDict[key] = float(valuesList[p])                
 
-                if l == 4:
+                if l == 3:
                     if is_number(valuesList[2]):
                         fundDict["Quartile"] = int(valuesList[2])
 
