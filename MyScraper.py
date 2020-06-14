@@ -16,6 +16,8 @@ import chromedriver_binary # Adds chromedriver binary to path
 
 import pandas as pd
 from datetime import datetime
+import re
+
 
 import sys
 #============================================
@@ -153,7 +155,7 @@ class WebTable:
 
         row_number = row_number + 1
         try:
-            A = self.table.find_element_by_xpath("//tr["+str(row_number)+"]/td["+str(column_number)+"]").text
+            self.table.find_element_by_xpath("//tr["+str(row_number)+"]/td["+str(column_number)+"]").text
     
         except NoSuchElementException:  #spelling error making this code not work as expected
             return False
@@ -228,23 +230,39 @@ class trustnetInf:
             self._first = False
 
         _statusOK = True
-        fundInf = Empty_fund_df.copy()
+    
+        # empty dataFrame
+        _fundInf = Empty_fund_df.copy()
+
+        # dictionary for gathering information from web page
+        fundDict =  {   "date":"NA",
+                        "fundName": "NA",
+                        "3m": "NA",
+                        "6m": "NA",
+                        "1y": "NA",
+                        "3y": "NA",
+                        "5y": "NA",
+                        "Quartile": "NA",
+                        "FERisk": "NA"}
 
         try:
-            #_TableElement = self.driver.find_element_by_class_name("data_table")
-            _TableElement = self.driver.find_element_by_class_name("chart_legends")
+            _notFound = True
+
+            _AllTableElement = self.driver.find_elements_by_class_name("data_table")
             
-            print(type(_TableElement))
-            print(_TableElement.text)
+            for _TableElement in _AllTableElement:
+                #print(type(_TableElement))
+                #print(_TableElement.text)
 
-            #TableXpath = "/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div[1]/div/div[1]/cumulative-performance"
-            #w1 = WebTable(self.driver.find_element_by_xpath(TableXpath))
-            #print(w1.get_text())
-            #print(w1.get_all_data())
-            #row_number = 2 - 1 # get_cell_data has 'row_number = row_number + 1'
-            #for column_number in range(2,7):
-            #    print(w1.get_cell_data(row_number, column_number))
+                if re.search('Quartile Ranking', _TableElement.text):
+                    _notFound = False
 
+                    # get fund name
+                    _fundName = self.driver.find_element_by_class_name("fundName")
+                    fundDict["fundName"] = _fundName.text
+
+                    break
+                 
         except NoSuchElementException:
             print(f"webpage {fundUrl} don't include required performance table")
             _statusOK = False
@@ -253,7 +271,37 @@ class trustnetInf:
             print(ex) 
             _statusOK = False
 
-        return False, fundInf
+        # gather information
+        if not _notFound and _statusOK:
+            l = 0
+            for line in _TableElement.text.split('\n'):
+                l += 1
+                valuesList = line.split(' ')
+                #print(l, " ",valuesList)
+
+                if l == 2:
+                    for p, key in zip(range(5), ["3m", "6m", "1y", "3y", "5y"]):
+                        #print(p, " ", key)
+                        if is_number(valuesList[p]):
+                            fundDict[key] = float(valuesList[p])                
+
+                if l == 4:
+                    if is_number(valuesList[2]):
+                        fundDict["Quartile"] = int(valuesList[2])
+
+            try:
+                #<span class="risk_score">72</span>
+                _FERisk = self.driver.find_element_by_class_name("risk_score")
+                fundDict["FERisk"] = int(_FERisk.text)
+        
+            except NoSuchElementException:  #spelling error making this code not work as expected
+                pass
+            
+            # success 
+            return True, pd.DataFrame(fundDict, index=[0])
+
+        # failed 
+        return False, _fundInf
 
 
     def getFundInf(self, fundUrl):
