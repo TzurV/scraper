@@ -316,6 +316,32 @@ class trustnetInf:
                     if is_number(valuesList[2]):
                         fundDict["Quartile"] = int(valuesList[2])
 
+            # print("\t>>> Got fund Sector ! ")
+            # try:
+            #     # look for sector
+            #     B = self.driver.find_element_by_partial_link_text('https://www.trustnet.com/')
+            #     _AllfundNameElements = self.driver.find_elements_by_class_name("fundName")
+            #     print(type(_AllfundNameElements))
+                
+            #     for _fundNameElement in _AllfundNameElements:
+            #         print(type(_fundNameElement))
+            #         print(_fundNameElement.text)
+
+            #         #if re.search('3 m 6 m', _TableElement.text):
+            #         #    # found table
+            #         #    _notFoundTable = False
+            #         #    #print(">> found the table! ")
+
+            #         #    # get fund name
+            #         #    _fundName = self.driver.find_element_by_class_name("fundName")
+            #         #    fundDict["fundName"] = _fundName.text
+
+            #         #    break
+
+            # except Exception as ex:
+            #     print("fundName: ", ex) 
+            #     _statusOK = False
+
             print("\t>>> Got performance ! ")
             try:
             #     #<span class="risk_score">72</span>
@@ -461,7 +487,7 @@ if __name__ == "__main__":
     ChromeInstance = trustnetInf()
 
     # dev  case for 2 funds
-    if False:
+    if True:
         # test 
         #   https://www.trustnet.com/factsheets/o/k5lq/fidelity-global-health-care
         #   https://www.trustnet.com/factsheets/o/ngpb/baillie-gifford-positive-change-b-acc
