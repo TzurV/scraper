@@ -316,31 +316,21 @@ class trustnetInf:
                     if is_number(valuesList[2]):
                         fundDict["Quartile"] = int(valuesList[2])
 
-            # print("\t>>> Got fund Sector ! ")
-            # try:
-            #     # look for sector
-            #     B = self.driver.find_element_by_partial_link_text('https://www.trustnet.com/')
-            #     _AllfundNameElements = self.driver.find_elements_by_class_name("fundName")
-            #     print(type(_AllfundNameElements))
+            print("\t>>> Got fund Sector ! ")
+            try:
+                # look for sector
+                # from: https://stackoverflow.com/questions/54862426/python-selenium-get-href-value
                 
-            #     for _fundNameElement in _AllfundNameElements:
-            #         print(type(_fundNameElement))
-            #         print(_fundNameElement.text)
+                elems = self.driver.find_elements_by_xpath("//span//a[contains(text(),'(View sector)')]")
+                print(elems[0].get_attribute("href"))
+                _sectorEle = self.driver.find_element_by_class_name("view-sector")
+                print("#"+_sectorEle.text+"#")
+                _sector = re.findall('Sector: (.*) \\(View sector\\)', _sectorEle.text)
+                print(_sector)
 
-            #         #if re.search('3 m 6 m', _TableElement.text):
-            #         #    # found table
-            #         #    _notFoundTable = False
-            #         #    #print(">> found the table! ")
-
-            #         #    # get fund name
-            #         #    _fundName = self.driver.find_element_by_class_name("fundName")
-            #         #    fundDict["fundName"] = _fundName.text
-
-            #         #    break
-
-            # except Exception as ex:
-            #     print("fundName: ", ex) 
-            #     _statusOK = False
+            except Exception as ex:
+                print("fundName: ", ex) 
+                _statusOK = False
 
             print("\t>>> Got performance ! ")
             try:
