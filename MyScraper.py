@@ -255,7 +255,9 @@ class trustnetInf:
                         "3y": "NA",
                         "5y": "NA",
                         "Quartile": "NA",
-                        "FERisk": "NA"}
+                        "FERisk": "NA",
+                        "Sector": "NA",
+                        "SectorUrl": "NA"}
 
         print("Check point 2 ! ")
         time.sleep(5)
@@ -322,15 +324,18 @@ class trustnetInf:
                 # from: https://stackoverflow.com/questions/54862426/python-selenium-get-href-value
                 
                 elems = self.driver.find_elements_by_xpath("//span//a[contains(text(),'(View sector)')]")
-                print(elems[0].get_attribute("href"))
+                #print(elems[0].get_attribute("href"))
+                fundDict["SectorUrl"] = elems[0].get_attribute("href")
+
                 _sectorEle = self.driver.find_element_by_class_name("view-sector")
-                print("#"+_sectorEle.text+"#")
+                #print("#"+_sectorEle.text+"#")
                 _sector = re.findall('Sector: (.*) \\(View sector\\)', _sectorEle.text)
-                print(_sector)
+                #print(_sector)
+                fundDict["Sector"] = _sector
 
             except Exception as ex:
-                print("fundName: ", ex) 
-                _statusOK = False
+                print("Sector: ", ex) 
+                #_statusOK = False
 
             print("\t>>> Got performance ! ")
             try:
@@ -477,7 +482,7 @@ if __name__ == "__main__":
     ChromeInstance = trustnetInf()
 
     # dev  case for 2 funds
-    if True:
+    if False:
         # test 
         #   https://www.trustnet.com/factsheets/o/k5lq/fidelity-global-health-care
         #   https://www.trustnet.com/factsheets/o/ngpb/baillie-gifford-positive-change-b-acc
