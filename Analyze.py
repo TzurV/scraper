@@ -50,7 +50,10 @@ if __name__ == "__main__":
     print(groupedFundsList)
     for fund, frame in groupedFundsList:
         print(fund)
-        print(frame)
+        print(frame.sort_values(by="date"))
+        sortedFunds = frame.sort_values(by="date")
+        for i in range(len(sortedFunds.index)):
+            print(sortedFunds.FERisk.iloc[i])
 
 
 
