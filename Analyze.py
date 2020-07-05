@@ -4,6 +4,19 @@ import glob, os
 
 if __name__ == "__main__":
 
+    #================================
+    # load current holdings from Holdings.txt
+    holdingsList = []
+    HoldingsFile = "Holdings.txt"
+    print("# Loading current holdings funds list:")
+    with open(HoldingsFile) as fp:
+        line = fp.readline()
+
+        while line:
+            print("Fund |{}|".format(line.strip()))
+            holdingsList.append(line.strip())
+            line = fp.readline()
+
     print("#=====================================================")
     # create empty dataframe
     allFundsInf = pd.DataFrame()
@@ -26,6 +39,7 @@ if __name__ == "__main__":
     #print(allFundsInf.head())
     #print(allFundsInf.columns)
     #print(allFundsInf.head())
+
 
     #=============================
     #                      3 first rows and 5 columns
@@ -54,7 +68,7 @@ if __name__ == "__main__":
     #    print(sector, fund, date)
 
     # create report
-    COLUMN_NAMES=['fundName', 'worsenQuartile', 'worsenFERisk']
+    COLUMN_NAMES=['fundName', 'Holding', 'worsenQuartile', 'worsenFERisk']
     pdSummary = pd.DataFrame(columns=COLUMN_NAMES)
 
     # group by fundname
@@ -79,7 +93,11 @@ if __name__ == "__main__":
         if worsenQuartile or worsenFERisk:
             print("\t#==================== Check this one =================")
             print(f"\t# {worsenQuartile}: worsen Quartile, higher FERisk: {worsenFERisk}  \n")
-            pdSummary = pdSummary.append({'fundName':fund, 'worsenQuartile':worsenQuartile, 'worsenFERisk':worsenFERisk}, ignore_index=True)
+            Holding = (fund in holdingsList)
+            pdSummary = pdSummary.append({'fundName':fund, 
+                                          'Holding':Holding ,
+                                          'worsenQuartile':worsenQuartile, 
+                                          'worsenFERisk':worsenFERisk}, ignore_index=True)
             
 
     print("====== Observations summary ============")
