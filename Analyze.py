@@ -1,12 +1,12 @@
 import pandas as pd
 import glob, os
-
+import pprint
 
 if __name__ == "__main__":
 
     #================================
     # load current holdings from Holdings.txt
-    holdingsList = []
+    holdingsList = {}
     HoldingsFile = "Holdings.txt"
     print("# Loading current holdings funds list:")
     with open(HoldingsFile) as fp:
@@ -14,7 +14,7 @@ if __name__ == "__main__":
 
         while line:
             print("Fund |{}|".format(line.strip()))
-            holdingsList.append(line.strip())
+            holdingsList[line.strip()] = False
             line = fp.readline()
 
     print("#=====================================================")
@@ -39,6 +39,11 @@ if __name__ == "__main__":
     #print(allFundsInf.head())
     #print(allFundsInf.columns)
     #print(allFundsInf.head())
+    
+    # conver date column to a datetime object
+    allFundsInf['date'] = pd.to_datetime(allFundsInf['date']).dt.strftime("%m/%d/%y")
+    #print(type(allFundsInf['date']))
+    
 
 
     #=============================
@@ -75,10 +80,24 @@ if __name__ == "__main__":
     groupedFundsList = allFundsInf.groupby('fundName', as_index=False)
     #print(groupedFundsList)
     for fund, frame in groupedFundsList:
-        print(fund)
+        Holding = (fund in holdingsList)
+        print(f"\n-=> Fund {fund} , holding {Holding} <=-")
+        if Holding:
+            holdingsList[fund] = True
         #print(frame.sort_values(by="date"))
-        sortedFunds = frame.sort_values(by="date")
-        print(sortedFunds[['date', 'Quartile', 'FERisk', '3m', '6m', '1y', '3y', '5y' ]])
+        sortedFunds = frame.drop_duplicates(subset ="date", keep = False)
+        #sortedFunds = frame1.sort_values(by="date", ascending=True)
+        
+        #sortedFunds.drop_duplicates(subset ="date", keep = False, inplace = True)
+
+        # date  column becomes index column
+        sortedFunds.set_index('date', drop=False, append=False, inplace=True, verify_integrity=False)
+        sortedFunds.sort_index()
+        # reverse order
+        sortedFunds = sortedFunds.iloc[::-1]
+        print(sortedFunds[['Quartile', 'FERisk', '3m', '6m', '1y', '3y', '5y' ]])
+
+        #print(sortedFunds[['date', 'Quartile', 'FERisk', '3m', '6m', '1y', '3y', '5y' ]])
         
         # check if Quartile and FERisk is different
         lastQuartile = sortedFunds.Quartile.iloc[0]
@@ -86,6 +105,7 @@ if __name__ == "__main__":
         lastFERisk = sortedFunds.FERisk.iloc[0]
         worsenFERisk = False
         for i in range(1, len(sortedFunds.index)):
+            #print(sortedFunds.iloc[[i]])
             if(lastQuartile>sortedFunds.Quartile.iloc[i]):
                 worsenQuartile = True
             if(lastFERisk*0.95>sortedFunds.FERisk.iloc[i]):
@@ -93,15 +113,22 @@ if __name__ == "__main__":
         if worsenQuartile or worsenFERisk:
             print("\t#==================== Check this one =================")
             print(f"\t# {worsenQuartile}: worsen Quartile, higher FERisk: {worsenFERisk}  \n")
-            Holding = (fund in holdingsList)
             pdSummary = pdSummary.append({'fundName':fund, 
                                           'Holding':Holding ,
                                           'worsenQuartile':worsenQuartile, 
                                           'worsenFERisk':worsenFERisk}, ignore_index=True)
             
 
+    print("----------- Check if all holdings are monitored --------")
+    pprint.pprint(holdingsList)
+    for a in holdingsList:
+        if not holdingsList[a]:
+            print(f"Check fund {a}")
+
+
+    print("")
     print("====== Observations summary ============")
-    print(pdSummary)
+    print(pdSummary.to_string())
 
     #print(type(A), A.shape)
     #AllSectorsdict = AllSectors.to_dict()
