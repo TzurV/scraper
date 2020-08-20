@@ -105,7 +105,7 @@ class WebTable:
         if(row_number == 0):
             raise Exception("Row number starts from 1")
 
-        row_number = row_number + 1
+        row_number = row_number
         row = self.table.find_elements_by_xpath("//tr["+str(row_number)+"]/td")
         rData = []
         for webElement in row :
@@ -221,7 +221,7 @@ class trustnetInf:
         self.driver.implicitly_wait(30)
 
 
-    def getFundInf_v2(self, fundUrl):
+    def getFundInf_v2(self, fundUrl, openAndReturn=False):
 
         if not self._first:
             # open new blank tab
@@ -240,6 +240,10 @@ class trustnetInf:
             self._first = False
 
         _statusOK = True
+
+        # open web page and return
+        if openAndReturn:
+            return _statusOK, self.driver
     
         # empty dataFrame
         _fundInf = Empty_fund_df.copy()
@@ -481,6 +485,58 @@ if __name__ == "__main__":
     
     ChromeInstance = trustnetInf()
 
+    if True:
+        # SECTOR ANALYSIS
+        print(f"Loading sectors performance")
+        url = "https://www.trustnet.com/fund/sectors/performance?universe=O"
+        _statusOK, chrom_driver = ChromeInstance.getFundInf_v2(url, openAndReturn=True)
+        if _statusOK:
+            print(f"Get Sectors data.")
+
+            try:
+                _notFoundTable = True
+                chrom_driver.implicitly_wait(1)
+                _AllTableElement = chrom_driver.find_elements_by_class_name("data_table")
+                
+                column_names = ["date", "sectorName", "1m", "3m", "6m", "1y", "3y", "5y"]
+                sectors_df = pd.DataFrame(columns = column_names)
+
+                for _TableElement in _AllTableElement:
+                    #print(type(_TableElement), _TableElement.text)
+
+                    if re.search('Rank Sector Name', _TableElement.text):
+                        #print(_TableElement.text)
+                        webTable = WebTable(_TableElement)
+                        print(webTable.get_table_size())
+                        for r in range(webTable.get_row_count()):
+                            rowDataList = webTable.row_data(r+1)[:8]
+                            # switch index by date
+                            rowDataList[0] = current_time
+
+                            # append data
+                            df_length = len(sectors_df)
+                            sectors_df.loc[df_length] = rowDataList
+
+                        print(sectors_df.shape)
+                        print(sectors_df)
+
+                        # save all funds  information 
+                        ## https://chrisalbon.com/python/data_wrangling/pandas_dataframe_importing_csv/
+                        fileName = "C:\\Users\\tzurv\\python\\VScode\\scraper\\" + dateStamp + "_TrustNetSectors.csv"
+                        print(f"Saving Sectors information to {fileName}")
+                        sectors_df.to_csv(fileName, sep=',', float_format='%.2f')
+
+                        # done gathering information, exit loop 
+                        break
+                    
+            except NoSuchElementException:
+                print(f"webpage {url} don't include required performance table")
+                _statusOK = False
+                
+            except Exception as ex:
+                print(ex) 
+                _statusOK = False
+       
     # dev  case for 2 funds
     if False:
         # test 
