@@ -4,6 +4,7 @@ import pprint
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
+from datetime import datetime
 
 
 def func(x, a, b, c, d):
@@ -24,7 +25,7 @@ def get_curve_fit(pastData):
         pastData = pastData[-10:]
 
     xdata = np.linspace(P+1-len(pastData), P, len(pastData))
-    print(xdata)
+    #print(xdata)
     popt, pcov = curve_fit(func, xdata, pastData)
     
     # return: succesful, coefficients, predict next 
@@ -80,6 +81,18 @@ if __name__ == "__main__":
     print(allFundsInf.groupby('Sector').Sector.count())
     print(allFundsInf.groupby(['fundName', 'date'])['date'].count())
 
+    # Save data for model training
+    now = datetime.now()
+    current_time = now.strftime("%d/%m/%y %H:%M")
+    print("Current Time =", current_time)
+    dateStamp = now.strftime("%Y%m%d")
+    TrainFileName = "C:\\Users\\tzurv\\python\\VScode\\scraper\\" + dateStamp + "_Train.csv"
+    EvalFileName  = "C:\\Users\\tzurv\\python\\VScode\\scraper\\" + dateStamp + "_Eval.csv"
+
+    trainFile = open(TrainFileName, 'w')
+    evalFile = open(EvalFileName, 'w')
+
+
     # group by fundname
     groupedFundsList = allFundsInf.groupby('fundName', as_index=False)
     #print(groupedFundsList)
@@ -122,14 +135,47 @@ if __name__ == "__main__":
         #print(sortedFunds['3m_annual'].to_string(index=False))
         pastData = sortedFunds['3m_annual'].tolist()
         pastData.reverse()
-        #print(pastData)
-        status, popt, predictNext = get_curve_fit(pastData)
-        print(f"predictNext:{predictNext:.3f}>3m_annual:{sortedFunds['3m_annual'][0]:.3f}")
-        if predictNext>sortedFunds['3m_annual'][0] and \
-            sortedFunds['3m_annual'][0]>sortedFunds['3m_annual'][1] and \
-            sortedFunds['3m_annual'][1]>sortedFunds['3m_annual'][2]:
-            print("Getting better !")
+        print(pastData)
         
+        #pastData = list(range(10))
+        #print(pastData)
+        
+        P = 4
+        weeksPeriod = 2*P-1
+        #print(pastData[-weeksPeriod-1:-1])
+        for ii in range(len(pastData)-weeksPeriod):
+            #print(ii, -ii-weeksPeriod-1, -ii-1)
+            
+            predictivePast = pastData[-ii-weeksPeriod-1:-ii-1]
+            print(predictivePast, pastData[-1-ii])   
+            status, popt, predictNext = get_curve_fit(pastData[-ii-weeksPeriod-1:-ii-1])
+            if status:
+                Y = 1
+                if pastData[-1-ii]<=0:
+                    print(f"Negative: {pastData[-1-ii]}")
+                    Y = 0
+                elif pastData[-2-ii]*0.9>pastData[-1-ii]:
+                    print(f"Worst in 10% or more: {pastData[-2-ii]} -> {pastData[-1-ii]} ")
+                    Y = 0
+                
+                outDataString = str([*predictivePast, *popt, Y ]).strip('[]')
+                if ii == 0:
+                    evalFile.write(outDataString+"\n")
+                    print(f"Eval Data: {outDataString}")
+                else:
+                    trainFile.write(outDataString+"\n")
+                    print(f"Train Data: {outDataString}")
+                
+        
+        #print(f"predictNext:{predictNext:.3f}>3m_annual:{sortedFunds['3m_annual'][0]:.3f}")
+        #if predictNext>sortedFunds['3m_annual'][0] and \
+        #    sortedFunds['3m_annual'][0]>sortedFunds['3m_annual'][1] and \
+        #    sortedFunds['3m_annual'][1]>sortedFunds['3m_annual'][2]:
+        #    print("Getting better !")
 
 
- 
+    #close files
+    trainFile.close()
+    evalFile.close()
+    
+    
