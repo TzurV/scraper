@@ -150,13 +150,16 @@ if __name__ == "__main__":
             print(predictivePast, pastData[-1-ii])   
             status, popt, predictNext = get_curve_fit(pastData[-ii-weeksPeriod-1:-ii-1])
             if status:
-                Y = 1
-                if pastData[-1-ii]<=0:
-                    print(f"Negative: {pastData[-1-ii]}")
-                    Y = 0
-                elif pastData[-2-ii]*0.9>pastData[-1-ii]:
-                    print(f"Worst in 10% or more: {pastData[-2-ii]} -> {pastData[-1-ii]} ")
-                    Y = 0
+                if False:
+                    Y = 1
+                    if pastData[-1-ii]<=0:
+                        print(f"Negative: {pastData[-1-ii]}")
+                        Y = 0
+                    elif pastData[-2-ii]*0.9>pastData[-1-ii]:
+                        print(f"Worst in 10% or more: {pastData[-2-ii]} -> {pastData[-1-ii]} ")
+                        Y = 0
+                else:
+                    Y = pastData[-1-ii]
                 
                 outDataString = str([*predictivePast, *popt, Y ]).strip('[]')
                 if ii == 0:
