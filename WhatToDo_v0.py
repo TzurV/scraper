@@ -118,7 +118,7 @@ class trainingClass:
 
         # N is batch size; D_in is input dimension;
         # H is hidden dimension; D_out is output dimension.
-        self.N, self.D_in, self.H, self.D_out = self.x.shape[0], self.x.shape[1], 10, 1
+        self.N, self.D_in, self.H, self.D_out = self.x.shape[0], self.x.shape[1], 20, 1
         print(f"N={self.N}, D_in={self.D_in}, H={self.H}, D_out={self.D_out}")   
 
         # move to device 
@@ -142,11 +142,54 @@ class trainingClass:
         # nn.Linear modules which are members of the model.
 
         self.criterion = torch.nn.MSELoss(reduction='sum')
-        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=0.000001, momentum=0.95, weight_decay=0.0001)
+        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=0.0000001, momentum=0.90, weight_decay=0.0001)
         #optimizer = torch.optim.Adam(model.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
     
-    def my_loss(output, target):
-        loss = torch.mean((output - target)**2)
+    def my_loss(self, output, target):
+        loss = 0.0
+        for o, t in zip(output, target):
+            if t[0]<=10.0 :
+                loss += (o[0]-t[0])**2
+                
+            else:
+                loss += (abs(o[0]-t[0])**1.5)
+        #loss = torch.mean((output - target)**2)
+        return loss
+
+    def my_loss_v1(self, output, target):
+        loss = 0.0
+        for o, t in zip(output, target):
+            dif = abs(o[0]-t[0])
+            if t[0]<0.0 :
+                if o[0]<0.0:
+                    loss += (dif**1.5)
+                    
+                elif o[0]<10.0:
+                    loss += (dif**2)
+
+                else:
+                    loss += (dif**3)
+                
+            elif t[0]<10:
+                if o[0]<0.0:
+                    loss += (dif**3)
+                    
+                elif o[0]<10.0:
+                    loss += (dif**2)
+
+                else:
+                    loss += (dif**1.5)
+                            
+            else:
+                if o[0]<0.0:
+                    loss += (dif**3)
+                    
+                elif o[0]<10.0:
+                    loss += (dif**1.5)
+
+                else:
+                    loss += (dif**1.1)
+                
         return loss
     
     def train(self, iters):
@@ -157,10 +200,12 @@ class trainingClass:
             #print(self.y_pred[:10], self.y[:10])
 
             # Compute and print loss
-            self.loss = self.criterion(self.y_pred, self.y)
+            #self.loss = self.criterion(self.y_pred, self.y)
+            #self.loss = self.my_loss(self.y_pred, self.y)
+            self.loss = self.my_loss_v1(self.y_pred, self.y)
             
-            if t % 100 == 99 :
-                print("\t", t, self.loss.item())
+            if t % 200 == 99 :
+                print(f"\t {t} {self.loss.item():0.4f}")
                 #for p, r in zip(self.y_pred[:10], self.y[:10]):
                 #    print(f"\tpredicted {p[0]:.2f} vs out {r[0]:.2f}")
 
@@ -174,6 +219,8 @@ class trainingClass:
 
     def evaluate(self, model, evalX, evalY, title="Scatter plot real vs predicted."):
 
+        print(f"Eval title {title}, size {evalY.shape}")
+        
         # evaluate
         with torch.no_grad():
             localEvalX = torch.from_numpy(evalX.astype(np.float32))
@@ -184,15 +231,50 @@ class trainingClass:
         out = torch.squeeze((out)) 
         npPredicted = out.detach().numpy()
 
-        colors = (0,0,0)
-        area = np.pi*3
-        plt.errorbar(evalY, npPredicted, yerr=evalY-npPredicted, fmt='o')
-        plt.errorbar(evalY, evalY, fmt='x', markeredgecolor = 'r')
-        plt.title(title)
-        plt.xlabel('real')
-        plt.ylabel('predicted')
-        plt.show()        
+        if False:
+            colors = (0,0,0)
+            area = np.pi*3
+            plt.errorbar(evalY, npPredicted, yerr=evalY-npPredicted, fmt='o')
+            plt.errorbar(evalY, evalY, fmt='x', markeredgecolor = 'r')
+            plt.title(title)
+            plt.xlabel('real')
+            plt.ylabel('predicted')
+            plt.show()    
+
+        # analyzed results 
+        # 3 bands: negative, 0<=x<10, 10<=xlabel 
+        I = pd.Index(['Rnegative','RmidRange','RHigh'], name="rows")
+        C = pd.Index(['Pnegative','PmidRange','PHigh', 'cases', 'MSError'], name="columns")
+        dfConfusion = pd.DataFrame(data=np.zeros(shape=(3,5)), index=I, columns=C)
+        for p, r in zip(npPredicted, evalY):
+            pRange = 'PHigh'
+            if p<=0:
+                pRange='Pnegative'
+            elif p<10:
+                pRange='PmidRange'
+           
+            if r<0:
+                dfConfusion[pRange]['Rnegative'] += 1
+                dfConfusion['cases']['Rnegative'] += 1
+                dfConfusion['MSError']['Rnegative'] += (p-r)**2
+            elif r<10:
+                dfConfusion[pRange]['RmidRange'] += 1
+                dfConfusion['cases']['RmidRange'] += 1
+                dfConfusion['MSError']['RmidRange'] += (p-r)**2
+            else:
+                dfConfusion[pRange]['RHigh'] += 1
+                dfConfusion['cases']['RHigh'] += 1
+                dfConfusion['MSError']['RHigh'] += (p-r)**2
+                
+        # Average
+        for a in ['Rnegative', 'RmidRange', 'RHigh']:
+            if dfConfusion['cases'][a]>0:
+                dfConfusion['MSError'][a] /= dfConfusion['cases'][a]
         
+                
+        # print confusion matrix
+        print(dfConfusion)
+        print(f"Done. \n")
         
        
 
@@ -228,12 +310,8 @@ if __name__ == "__main__":
     TrainFileName = dateStamp + "_Train.csv"
     EvalFileName  = dateStamp + "_Eval.csv"
     allRawData = loadData(TrainFileName, EvalFileName)
-    
     allTrainData = allRawData.getRawTrain()
-    #print(allRawData.getRawTrain().shape)
-    
-    allEvalData = allRawData.getRawTrain()
-    #print(allRawData.getRawEval().shape)    
+    allEvalData = allRawData.getRawEval()
     
     # Seperate traing for output
     trainX, trainYpart = allRawData.seperateOutput(allTrainData)
@@ -262,19 +340,19 @@ if __name__ == "__main__":
         
         # create model, move data and model to device
         trainer.prepare(normTrainX, trainYpart)
-        trainedModel = trainer.train(1000)
+        trainedModel = trainer.train(3000)
         trainer.evaluate(trainedModel, normTrainX, trainYpart, title="Train Data")
 
         # Seperate traing for output
+        print(allEvalData.size)
         evalX, evalYpart = allRawData.seperateOutput(allEvalData)
+        
+        
         normEvalX = dNorm.normalize(evalX)
         if not localParser.args.features == 'all':
             normEvalX = normEvalX[:,col_idx]
         trainer.evaluate(trainedModel, normEvalX, evalYpart, title="Evaluation")
-        
-
-
-        
+       
         sys.exit()
     
     print(f"# Unsupported task {localParser.args.task}")
