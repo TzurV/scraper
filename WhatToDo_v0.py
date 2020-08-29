@@ -160,7 +160,7 @@ class trainingClass:
         #loss = torch.mean((output - target)**2)
         return loss
 
-    def my_loss_v1(self, output, target, midRanveLimit=20):
+    def my_loss_v1(self, output, target, midRanveLimit=10):
         loss = 0.0
         for o, t in zip(output, target):
             dif = abs(o[0]-t[0])
@@ -221,9 +221,9 @@ class trainingClass:
         return self.model           
 
 
-    def evaluate(self, model, evalX, evalY, title="Scatter plot real vs predicted.", midRanveLimit=20):
+    def evaluate(self, model, evalX, evalY, title="Scatter plot real vs predicted.", midRanveLimit=10):
 
-        print(f"Eval title {title}, size {evalY.shape}")
+        print(f"Eval title {title}, size {evalY.shape}, midRanveLimit={midRanveLimit}")
         
         # evaluate
         with torch.no_grad():
@@ -345,8 +345,9 @@ if __name__ == "__main__":
         
         # create model, move data and model to device
         trainer.prepare(normTrainX, trainYpart)
-        trainedModel = trainer.train(100000)
-        trainer.evaluate(trainedModel, normTrainX, trainYpart, title="Train Data")
+        trainedModel = trainer.train(50000)
+        midRanveLimit = 20
+        trainer.evaluate(trainedModel, normTrainX, trainYpart, title="Train Data",  midRanveLimit=midRanveLimit)
 
         # Seperate traing for output
         print(allEvalData.size)
@@ -356,7 +357,7 @@ if __name__ == "__main__":
         normEvalX = dNorm.normalize(evalX)
         if not localParser.args.features == 'all':
             normEvalX = normEvalX[:,col_idx]
-        trainer.evaluate(trainedModel, normEvalX, evalYpart, title="Evaluation")
+        trainer.evaluate(trainedModel, normEvalX, evalYpart, title="Evaluation",  midRanveLimit=midRanveLimit)
        
         sys.exit()
     
