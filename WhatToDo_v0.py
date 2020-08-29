@@ -77,7 +77,9 @@ class TwoLayerNet(torch.nn.Module):
         """
         super(TwoLayerNet, self).__init__()
         self.linear1 = torch.nn.Linear(D_in, H)
+        self.relu1    = torch.nn.ReLU(inplace=True)
         self.linear2 = torch.nn.Linear(H, H)
+        self.relu2    = torch.nn.ReLU(inplace=True)
         self.linear3 = torch.nn.Linear(H, D_out)
 
     def forward(self, x):
@@ -87,7 +89,9 @@ class TwoLayerNet(torch.nn.Module):
         well as arbitrary operators on Tensors.
         """
         h_relu1 = self.linear1(x)
+        h_relu1 = self.relu1(h_relu1)
         h_relu2 = self.linear2(h_relu1)
+        h_relu2 = self.relu2(h_relu2)
         y_pred  = self.linear3(h_relu2)
         return y_pred
 
@@ -156,7 +160,7 @@ class trainingClass:
         #loss = torch.mean((output - target)**2)
         return loss
 
-    def my_loss_v1(self, output, target):
+    def my_loss_v1(self, output, target, midRanveLimit=20):
         loss = 0.0
         for o, t in zip(output, target):
             dif = abs(o[0]-t[0])
@@ -164,17 +168,17 @@ class trainingClass:
                 if o[0]<0.0:
                     loss += (dif**1.5)
                     
-                elif o[0]<10.0:
+                elif o[0]<midRanveLimit:
                     loss += (dif**2)
 
                 else:
                     loss += (dif**3)
                 
-            elif t[0]<10:
+            elif t[0]<midRanveLimit:
                 if o[0]<0.0:
                     loss += (dif**3)
                     
-                elif o[0]<10.0:
+                elif o[0]<midRanveLimit:
                     loss += (dif**2)
 
                 else:
@@ -184,7 +188,7 @@ class trainingClass:
                 if o[0]<0.0:
                     loss += (dif**3)
                     
-                elif o[0]<10.0:
+                elif o[0]<midRanveLimit:
                     loss += (dif**1.5)
 
                 else:
@@ -200,11 +204,11 @@ class trainingClass:
             #print(self.y_pred[:10], self.y[:10])
 
             # Compute and print loss
-            #self.loss = self.criterion(self.y_pred, self.y)
+            self.loss = self.criterion(self.y_pred, self.y)
             #self.loss = self.my_loss(self.y_pred, self.y)
-            self.loss = self.my_loss_v1(self.y_pred, self.y)
+            #self.loss = self.my_loss_v1(self.y_pred, self.y)
             
-            if t % 200 == 99 :
+            if t % 500 == 99 :
                 print(f"\t {t} {self.loss.item():0.4f}")
                 #for p, r in zip(self.y_pred[:10], self.y[:10]):
                 #    print(f"\tpredicted {p[0]:.2f} vs out {r[0]:.2f}")
@@ -217,7 +221,7 @@ class trainingClass:
         return self.model           
 
 
-    def evaluate(self, model, evalX, evalY, title="Scatter plot real vs predicted."):
+    def evaluate(self, model, evalX, evalY, title="Scatter plot real vs predicted.", midRanveLimit=20):
 
         print(f"Eval title {title}, size {evalY.shape}")
         
@@ -242,7 +246,8 @@ class trainingClass:
             plt.show()    
 
         # analyzed results 
-        # 3 bands: negative, 0<=x<10, 10<=xlabel 
+        # 3 bands: negative, 0<=x<midRanveLimit, midRanveLimit<=xlabel 
+        #midRanveLimit = 20
         I = pd.Index(['Rnegative','RmidRange','RHigh'], name="rows")
         C = pd.Index(['Pnegative','PmidRange','PHigh', 'cases', 'MSError'], name="columns")
         dfConfusion = pd.DataFrame(data=np.zeros(shape=(3,5)), index=I, columns=C)
@@ -250,14 +255,14 @@ class trainingClass:
             pRange = 'PHigh'
             if p<=0:
                 pRange='Pnegative'
-            elif p<10:
+            elif p<midRanveLimit:
                 pRange='PmidRange'
            
             if r<0:
                 dfConfusion[pRange]['Rnegative'] += 1
                 dfConfusion['cases']['Rnegative'] += 1
                 dfConfusion['MSError']['Rnegative'] += (p-r)**2
-            elif r<10:
+            elif r<midRanveLimit:
                 dfConfusion[pRange]['RmidRange'] += 1
                 dfConfusion['cases']['RmidRange'] += 1
                 dfConfusion['MSError']['RmidRange'] += (p-r)**2
@@ -340,7 +345,7 @@ if __name__ == "__main__":
         
         # create model, move data and model to device
         trainer.prepare(normTrainX, trainYpart)
-        trainedModel = trainer.train(3000)
+        trainedModel = trainer.train(100000)
         trainer.evaluate(trainedModel, normTrainX, trainYpart, title="Train Data")
 
         # Seperate traing for output
