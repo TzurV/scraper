@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from datetime import datetime
+import sys
 
 
 def func(x, a, b, c, d):
@@ -63,7 +64,8 @@ if __name__ == "__main__":
     print(allFundsInf.columns)
     
     # convert date column to a datetime object
-    allFundsInf['date'] = pd.to_datetime(allFundsInf['date']).dt.strftime("%m/%d/%y")
+    allFundsInf['date'] = pd.to_datetime(allFundsInf['date']).dt.strftime("%m/%d/%y")  
+    print(f"# Earliest date {allFundsInf['date'].min()}")
     
 
 
@@ -88,9 +90,12 @@ if __name__ == "__main__":
     dateStamp = now.strftime("%Y%m%d")
     TrainFileName = "C:\\Users\\tzurv\\python\\VScode\\scraper\\" + dateStamp + "_Train.csv"
     EvalFileName  = "C:\\Users\\tzurv\\python\\VScode\\scraper\\" + dateStamp + "_Eval.csv"
+    descriptionFileName  = "C:\\Users\\tzurv\\python\\VScode\\scraper\\" + dateStamp + "_Des.csv"
 
     trainFile = open(TrainFileName, 'w')
     evalFile = open(EvalFileName, 'w')
+    desFileFlag = True
+    desFile = open(descriptionFileName, 'w')
 
 
     # group by fundname
@@ -118,9 +123,9 @@ if __name__ == "__main__":
         displayColumsList.append(newColumnName)
         sortedFunds[newColumnName] = 100*(pow(1+sortedFunds['3m']/100.0,12/3) - 1.0)
         
-        #newColumnName = '6m_annual'
-        #displayColumsList.append(newColumnName)
-        #sortedFunds[newColumnName] = 100*(pow(1+sortedFunds['6m']/100.0,12/6) - 1.0)
+        newColumnName = '6m_annual'
+        displayColumsList.append(newColumnName)
+        sortedFunds[newColumnName] = 100*(pow(1+sortedFunds['6m']/100.0,12/6) - 1.0)
 
         #newColumnName = '3y_annual'
         #displayColumsList.append(newColumnName)
@@ -135,7 +140,7 @@ if __name__ == "__main__":
         #print(sortedFunds['3m_annual'].to_string(index=False))
         pastData = sortedFunds['3m_annual'].tolist()
         pastData.reverse()
-        print(pastData)
+        print(f"[DBG] All Past Data {pastData}")
         
         #pastData = list(range(10))
         #print(pastData)
@@ -161,7 +166,31 @@ if __name__ == "__main__":
                 else:
                     Y = pastData[-1-ii]
                 
-                outDataString = str([*predictivePast, *popt, Y ]).strip('[]')
+                ## add description for every data/feature entry 
+                if desFileFlag:
+                    desDataString  = f"predictivePast[{weeksPeriod}], "
+                    desDataString += "fit[4], "
+                    desDataString += "3m, "
+                    desDataString += "6m_annual, "
+                    desDataString += "Y[1]"
+                    
+                # create the data list for the prediction
+                outDataList =  [*predictivePast]
+                outDataList+= [*popt]
+                outDataList+= [sortedFunds['3m'].iloc[ii+1]]
+                outDataList+= [sortedFunds['6m_annual'].iloc[ii+1]]
+                outDataList+= [Y]
+                outDataString = str(outDataList).strip('[]')
+                #outDataString = str([*predictivePast, *popt, sortedFunds['3m'].iloc[-ii-1], Y ]).strip('[]')
+
+                if desFileFlag:
+                    # Write to description/headr file and close
+                    #desFile.write(f"predictivePast[{weeksPeriod}], fit[4], Y[1]")
+                    desFile.write(f"{desDataString}\n")
+                    desFile.close()
+                    desFileFlag = False
+                
+                # write to a file
                 if ii == 0:
                     evalFile.write(outDataString+"\n")
                     print(f"Eval Data: {outDataString}")

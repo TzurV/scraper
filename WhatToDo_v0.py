@@ -290,7 +290,8 @@ class parserClass:
         #parser.add_argument('integers', metavar='N', type=int, nargs='+',
         #           help='an integer for the accumulator')
         parser.add_argument('--task',     '-t', help='define the required task', default='predict')
-        parser.add_argument('--features', '-f', help='selected features, example -f "[1, 2, 3, 4]"',        default='all')
+        parser.add_argument('--date',     '-d', help='data files date name', required=True)
+        parser.add_argument('--features', '-f', help='selected features, example -f "[1, 2, 3, 4]"', default='all')
 
         self.args = parser.parse_args(args_dict)
 
@@ -311,7 +312,7 @@ if __name__ == "__main__":
 
 
     # load data files
-    dateStamp = "20200827"
+    dateStamp = localParser.args.date
     TrainFileName = dateStamp + "_Train.csv"
     EvalFileName  = dateStamp + "_Eval.csv"
     allRawData = loadData(TrainFileName, EvalFileName)
