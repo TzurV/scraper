@@ -42,7 +42,11 @@ class loadData:
         return self.allTrainingData
         
     def getRawEval(self):
-        return self.allEvalData
+        # return without fund name
+        return self.allEvalData[:,1:]
+
+    def getEvalFundByLocation(self, indx):
+        return self.allEvalData[indx,0]
         
     def seperateOutput(self, data):
         return data[:,0:-1], data[:,-1]
@@ -122,7 +126,7 @@ class trainingClass:
 
         # N is batch size; D_in is input dimension;
         # H is hidden dimension; D_out is output dimension.
-        self.N, self.D_in, self.H, self.D_out = self.x.shape[0], self.x.shape[1], 20, 1
+        self.N, self.D_in, self.H, self.D_out = self.x.shape[0], self.x.shape[1], 25, 1
         print(f"N={self.N}, D_in={self.D_in}, H={self.H}, D_out={self.D_out}")   
 
         # move to device 
