@@ -7,7 +7,13 @@ from scipy.optimize import curve_fit
 from datetime import datetime
 import sys
 
-
+def dbgPrint(*args):
+    ''' Debug function '''
+    if True:
+        print("[DBG]", *args)
+    else:
+        pass
+ 
 def func(x, a, b, c, d):
     ''' ~x^3 curve     '''
     return a + b * x + c * x * x + d * pow(x,3)
@@ -56,7 +62,9 @@ if __name__ == "__main__":
 
         # loading examples
         #https://chrisalbon.com/python/data_wrangling/pandas_dataframe_importing_csv/
-        fundInf = pd.read_csv(file, sep=',')
+        fundInf = pd.read_csv(file, sep=',', dayfirst=True)
+        dtm = lambda x: datetime.strptime(x, "%d/%m/%y %H:%M")
+        fundInf["date"] = fundInf["date"].apply(dtm)
         allFundsInf = allFundsInf.append(fundInf, ignore_index=True)
 
     print("-------- ALL ----------------")
@@ -64,8 +72,33 @@ if __name__ == "__main__":
     print(allFundsInf.columns)
     
     # convert date column to a datetime object
-    allFundsInf['date'] = pd.to_datetime(allFundsInf['date']).dt.strftime("%m/%d/%y")  
-    print(f"# Earliest date {allFundsInf['date'].min()}")
+    #allFundsInf['date'] = pd.to_datetime(allFundsInf['date']).dt.strftime("%d/%m/%y") 
+    print(f"Erliest Date {min(allFundsInf['date'])}")
+    #############################################
+    if False:
+        earliest = None
+        setDates = set()
+        for d1 in allFundsInf['date']:
+            if earliest is None or earliest>d1:
+                print(earliest, "<-", d1)
+                earliest = d1
+            setDates.add(d1)
+        print(setDates)
+        print("selected: ", earliest)
+        print(type(d1), type(allFundsInf['date'].iloc[0]))
+
+        # print("-"*20)
+        # earliest = None
+        # for d1 in setDates:
+            # print(d1)
+            # dt1 = datetime.strptime(d1, "%d/%m/%y")
+            # print(dt1.strftime('%B'))
+            # if earliest is None or earliest>dt1:
+                # print(earliest, "<-", dt1)
+                # earliest = dt1
+        # print("selected: ", earliest)
+        sys.exit(0)
+    #################################################
     
 
 
@@ -140,7 +173,7 @@ if __name__ == "__main__":
         #print(sortedFunds['3m_annual'].to_string(index=False))
         pastData = sortedFunds['3m_annual'].tolist()
         pastData.reverse()
-        print(f"[DBG] All Past Data {pastData}")
+        dbgPrint(f"All Past Data {pastData}")
         
         #pastData = list(range(10))
         #print(pastData)
@@ -152,7 +185,7 @@ if __name__ == "__main__":
             #print(ii, -ii-weeksPeriod-1, -ii-1)
             
             predictivePast = pastData[-ii-weeksPeriod-1:-ii-1]
-            print(predictivePast, pastData[-1-ii])   
+            dbgPrint(predictivePast, pastData[-1-ii])   
             status, popt, predictNext = get_curve_fit(pastData[-ii-weeksPeriod-1:-ii-1])
             if status:
                 if False:
@@ -192,18 +225,11 @@ if __name__ == "__main__":
                 
                 # write to a file
                 if ii == 0:
-                    evalFile.write(outDataString+"\n")
-                    print(f"Eval Data: {outDataString}")
+                    evalFile.write(f"{fund}, {outDataString}\n")
+                    print(f"#'{fund}' Eval Data: {outDataString}")
                 else:
                     trainFile.write(outDataString+"\n")
-                    print(f"Train Data: {outDataString}")
-                
-        
-        #print(f"predictNext:{predictNext:.3f}>3m_annual:{sortedFunds['3m_annual'][0]:.3f}")
-        #if predictNext>sortedFunds['3m_annual'][0] and \
-        #    sortedFunds['3m_annual'][0]>sortedFunds['3m_annual'][1] and \
-        #    sortedFunds['3m_annual'][1]>sortedFunds['3m_annual'][2]:
-        #    print("Getting better !")
+                    dbgPrint(f"Train Data: {outDataString}")
 
 
     #close files
