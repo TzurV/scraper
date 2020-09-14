@@ -40,6 +40,9 @@ def get_curve_fit(pastData):
 
 
 if __name__ == "__main__":
+    
+    print("# Set working directory.")
+    os.chdir('C:\\Users\\tzurv\\python\\VScode\\scraper')
 
     #================================
     # load current holdings from Holdings.txt
@@ -54,7 +57,7 @@ if __name__ == "__main__":
             holdingsList[line.strip()] = False
             line = fp.readline()
 
-    print("#=====================================================")
+    print("# Load Funds Information =====================================================")
     # create empty dataframe
     allFundsInf = pd.DataFrame()
     for file in glob.glob("*_FundsInf.csv"):
@@ -71,6 +74,30 @@ if __name__ == "__main__":
     print(allFundsInf.shape)
     print(allFundsInf.columns)
     
+    print("# Load Sector Information =====================================================")
+    # create empty dataframe
+    allSectorsInf = pd.DataFrame()
+    for file in glob.glob("*_TrustNetSectors.csv"):
+        print(f"Loading {file}" )
+
+        sectorsInf = pd.read_csv(file, sep=',', dayfirst=True)
+        dtm = lambda x: datetime.strptime(x, "%d/%m/%y %H:%M")
+        sectorsInf["date"] = sectorsInf["date"].apply(dtm)
+        #dbgPrint(sectorsInf.to_string())
+        #dbgPrint(sectorsInf.loc[sectorsInf['sectorName'] == 'IA Flexible Investment'].index)
+        #dbgPrint(sectorsInf.loc[ (sectorsInf['date'] == pd.to_datetime('2020-08-20 15:53:00', format='%Y-%m-%d %H:%M:%S', errors='ignore')) &\
+        #                        (sectorsInf['sectorName'] == 'IA Flexible Investment') ])
+        #dbgPrint(sectorsInf.loc[ (sectorsInf['date'].dt.date == pd.to_datetime('2020-08-20', format='%Y-%m-%d', errors='ignore')) &\
+        #                        (sectorsInf['sectorName'] == 'IA Flexible Investment') ])
+        #sys.exit(0)
+        
+        allSectorsInf = allSectorsInf.append(sectorsInf, ignore_index=True)
+
+    print("-------- ALL ----------------")
+    print(allSectorsInf.shape)
+    print(allSectorsInf.columns)
+
+
     # convert date column to a datetime object
     #allFundsInf['date'] = pd.to_datetime(allFundsInf['date']).dt.strftime("%d/%m/%y") 
     print(f"Erliest Date {min(allFundsInf['date'])}")
@@ -143,14 +170,12 @@ if __name__ == "__main__":
         sortedFunds = frame.drop_duplicates(subset ="date", keep = False)
         #sortedFunds = frame1.sort_values(by="date", ascending=True)
         
-        #sortedFunds.drop_duplicates(subset ="date", keep = False, inplace = True)
-
         # date  column becomes index column
         sortedFunds.set_index('date', drop=False, append=False, inplace=True, verify_integrity=False)
         sortedFunds.sort_index()
         # reverse order
         sortedFunds = sortedFunds.iloc[::-1]
-        displayColumsList = ['Quartile', 'FERisk', '3m', '6m', '1y', '3y', '5y']
+        displayColumsList = ['Quartile', 'FERisk', '3m', '6m', '1y', '3y', '5y', 'Sector']
         
         newColumnName = '3m_annual'
         displayColumsList.append(newColumnName)
@@ -174,15 +199,23 @@ if __name__ == "__main__":
         pastData = sortedFunds['3m_annual'].tolist()
         pastData.reverse()
         dbgPrint(f"All Past Data {pastData}")
+                
+        # collect data dates
+        dataDatesList =  [x.strftime('%Y-%m-%d') for x in sortedFunds.index]
+        dbgPrint(f"Date: {dataDatesList[0]}, Sector: {sortedFunds['Sector'][0]}")
+        dbgPrint(allSectorsInf['sectorName'])
+        dbgPrint(allSectorsInf['sectorName'] == sortedFunds['Sector'][0])
+        dbgPrint(allSectorsInf.loc[ (allSectorsInf['date'].dt.date == \
+                                   pd.to_datetime(dataDatesList[0], format='%Y-%m-%d', errors='ignore')) & \
+                                       (allSectorsInf['sectorName'] == sortedFunds['Sector'][0]) ].to_string())
         
-        #pastData = list(range(10))
-        #print(pastData)
+        #continue
+        sys.exit(0)
+        
         
         P = 4
         weeksPeriod = 2*P-1
-        #print(pastData[-weeksPeriod-1:-1])
         for ii in range(len(pastData)-weeksPeriod):
-            #print(ii, -ii-weeksPeriod-1, -ii-1)
             
             predictivePast = pastData[-ii-weeksPeriod-1:-ii-1]
             dbgPrint(predictivePast, pastData[-1-ii])   
