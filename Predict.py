@@ -66,8 +66,16 @@ if __name__ == "__main__":
         # loading examples
         #https://chrisalbon.com/python/data_wrangling/pandas_dataframe_importing_csv/
         fundInf = pd.read_csv(file, sep=',', dayfirst=True)
+
+        # set datetime
         dtm = lambda x: datetime.strptime(x, "%d/%m/%y %H:%M")
         fundInf["date"] = fundInf["date"].apply(dtm)
+
+        # get unique fund code
+        fundCode = lambda P: P.split('/')[-2]
+        fundInf["fundCode"] = fundInf["url"].apply(fundCode)
+        #dbgPrint(fundInf.to_string())
+        
         allFundsInf = allFundsInf.append(fundInf, ignore_index=True)
 
     print("-------- ALL ----------------")
@@ -166,9 +174,14 @@ if __name__ == "__main__":
 
 
     # group by fundname
-    groupedFundsList = allFundsInf.groupby('fundName', as_index=False)
+    #groupedFundsList = allFundsInf.groupby('fundName', as_index=False)
+    
+    # group by fundname (code)
+    groupedFundsList = allFundsInf.groupby('fundCode', as_index=False)
+    
     #print(groupedFundsList)
-    for fund, frame in groupedFundsList:
+    for fundCode, frame in groupedFundsList:
+        fund = frame.fundName.iloc[0]
         Holding = (fund in holdingsList)
         print(f"\n-=> Fund {fund} , holding {Holding} <=-")
         if Holding:
