@@ -59,7 +59,9 @@ class selectFeatues:
             warnings.simplefilter("ignore")
             
             indxs = [x for x in range(analyzedData.shape[1])]
-            for L in range(3, analyzedData.shape[1]):
+            #for L in range(3, analyzedData.shape[1]):
+            Half = int(analyzedData.shape[1] / 2)
+            for L in range(Half+3 , Half-1, -1):
                 print(f" --------------- {L} ------------")
                 for c in itertools.combinations(indxs, L):
                     col_idx = np.asarray(c)
@@ -74,7 +76,7 @@ class selectFeatues:
     
 
 class TwoLayerNet(torch.nn.Module):
-    def __init__(self, D_in, H, D_out):
+    def __init__(self, D_in, H, D_out, dropout=0.2):
         """
         In the constructor we instantiate two nn.Linear modules and assign them as
         member variables.
@@ -82,6 +84,8 @@ class TwoLayerNet(torch.nn.Module):
         super(TwoLayerNet, self).__init__()
         self.linear1 = torch.nn.Linear(D_in, H)
         self.relu1    = torch.nn.ReLU(inplace=True)
+        #The dropout module nn.Dropout conveniently handles this and shuts dropout off as soon as your model enters evaluation mode
+        self.dropout1 = torch.nn.Dropout(p=dropout)
         self.linear2 = torch.nn.Linear(H, H)
         self.relu2    = torch.nn.ReLU(inplace=True)
         self.linear3 = torch.nn.Linear(H, D_out)
@@ -94,6 +98,7 @@ class TwoLayerNet(torch.nn.Module):
         """
         h_relu1 = self.linear1(x)
         h_relu1 = self.relu1(h_relu1)
+        h_relu1 = self.dropout1(h_relu1)
         h_relu2 = self.linear2(h_relu1)
         h_relu2 = self.relu2(h_relu2)
         y_pred  = self.linear3(h_relu2)
@@ -293,7 +298,7 @@ class parserClass:
         parser = argparse.ArgumentParser(description='Process funds data')
         #parser.add_argument('integers', metavar='N', type=int, nargs='+',
         #           help='an integer for the accumulator')
-        parser.add_argument('--task',     '-t', help='define the required task', default='predict')
+        parser.add_argument('--task',     '-t', help='define the required task', default='train')
         parser.add_argument('--date',     '-d', help='data files date name', required=True)
         parser.add_argument('--features', '-f', help='selected features, example -f "[1, 2, 3, 4]"', default='all')
 
