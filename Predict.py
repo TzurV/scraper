@@ -83,6 +83,8 @@ if __name__ == "__main__":
         sectorsInf = pd.read_csv(file, sep=',', dayfirst=True)
         dtm = lambda x: datetime.strptime(x, "%d/%m/%y %H:%M")
         sectorsInf["date"] = sectorsInf["date"].apply(dtm)
+        
+        # development code 
         #dbgPrint(sectorsInf.to_string())
         #dbgPrint(sectorsInf.loc[sectorsInf['sectorName'] == 'IA Flexible Investment'].index)
         #dbgPrint(sectorsInf.loc[ (sectorsInf['date'] == pd.to_datetime('2020-08-20 15:53:00', format='%Y-%m-%d %H:%M:%S', errors='ignore')) &\
@@ -96,7 +98,12 @@ if __name__ == "__main__":
     print("-------- ALL ----------------")
     print(allSectorsInf.shape)
     print(allSectorsInf.columns)
-
+    
+    sectorSelectedColumns = ['1m', '3m', '6m', '1y', '3y', '5y']
+    allSectorsMean = [x for x in allSectorsInf[sectorSelectedColumns].mean()]
+    #allSectorsMean = allSectorsMean[1:]
+    dbgPrint(f"# Sectors average {[ '%.2f' % elem for elem in allSectorsMean ] }")
+        
 
     # convert date column to a datetime object
     #allFundsInf['date'] = pd.to_datetime(allFundsInf['date']).dt.strftime("%d/%m/%y") 
@@ -166,17 +173,23 @@ if __name__ == "__main__":
         print(f"\n-=> Fund {fund} , holding {Holding} <=-")
         if Holding:
             holdingsList[fund] = True
-        #print(frame.sort_values(by="date"))
+
+        # remove duplicate entries of dates for this fund            
         sortedFunds = frame.drop_duplicates(subset ="date", keep = False)
-        #sortedFunds = frame1.sort_values(by="date", ascending=True)
         
         # date  column becomes index column
         sortedFunds.set_index('date', drop=False, append=False, inplace=True, verify_integrity=False)
         sortedFunds.sort_index()
+
         # reverse order
         sortedFunds = sortedFunds.iloc[::-1]
+
+        # get Fund sector
+        fundSector = sortedFunds['Sector'][0]
+
         displayColumsList = ['Quartile', 'FERisk', '3m', '6m', '1y', '3y', '5y', 'Sector']
         
+        # add more processed
         newColumnName = '3m_annual'
         displayColumsList.append(newColumnName)
         sortedFunds[newColumnName] = 100*(pow(1+sortedFunds['3m']/100.0,12/3) - 1.0)
@@ -202,23 +215,38 @@ if __name__ == "__main__":
                 
         # collect data dates
         dataDatesList =  [x.strftime('%Y-%m-%d') for x in sortedFunds.index]
-        dbgPrint(f"Date: {dataDatesList[0]}, Sector: {sortedFunds['Sector'][0]}")
-        dbgPrint(allSectorsInf['sectorName'])
-        dbgPrint(allSectorsInf['sectorName'] == sortedFunds['Sector'][0])
-        dbgPrint(allSectorsInf.loc[ (allSectorsInf['date'].dt.date == \
-                                   pd.to_datetime(dataDatesList[0], format='%Y-%m-%d', errors='ignore')) & \
-                                       (allSectorsInf['sectorName'] == sortedFunds['Sector'][0]) ].to_string())
+        # development code
+        if False:
+            dbgPrint(f"Date: {dataDatesList[0]}, Sector: {sortedFunds['Sector'][0]}")
+            dbgPrint(allSectorsInf['sectorName'])
+            dbgPrint(allSectorsInf['sectorName'] == sortedFunds['Sector'][0])
+            dbgPrint(allSectorsInf.loc[ (allSectorsInf['date'].dt.date == \
+                                       pd.to_datetime(dataDatesList[0], format='%Y-%m-%d', errors='ignore')) & \
+                                           (allSectorsInf['sectorName'] == fundSector ) ].to_string())
+            
+            #continue
+            sys.exit(0)
         
-        #continue
-        sys.exit(0)
         
-        
+        # History window size 
         P = 4
         weeksPeriod = 2*P-1
+        
+        # Moving history window
         for ii in range(len(pastData)-weeksPeriod):
             
             predictivePast = pastData[-ii-weeksPeriod-1:-ii-1]
             dbgPrint(predictivePast, pastData[-1-ii])   
+
+            # get sector performance history vector
+            sectorVec = allSectorsMean
+            fundSectorPerformanceOnDate = allSectorsInf.loc[ (allSectorsInf['date'].dt.date == \
+                                       pd.to_datetime(dataDatesList[ii], format='%Y-%m-%d', errors='ignore')) & \
+                                           (allSectorsInf['sectorName'] == fundSector ) ]
+            if len(fundSectorPerformanceOnDate):
+                dbgPrint(fundSectorPerformanceOnDate[sectorSelectedColumns])
+                sectorVec = fundSectorPerformanceOnDate.iloc[0][sectorSelectedColumns].tolist()
+            
             status, popt, predictNext = get_curve_fit(pastData[-ii-weeksPeriod-1:-ii-1])
             if status:
                 if False:
@@ -238,7 +266,9 @@ if __name__ == "__main__":
                     desDataString += "fit[4], "
                     desDataString += "3m, "
                     desDataString += "6m_annual, "
-                    desDataString += "Y[1]"
+                    desDataString += "Y[1], "
+                    desDataString += "Sector[6]"
+                    
                     
                 # create the data list for the prediction
                 outDataList =  [*predictivePast]
@@ -246,6 +276,7 @@ if __name__ == "__main__":
                 outDataList+= [sortedFunds['3m'].iloc[ii+1]]
                 outDataList+= [sortedFunds['6m_annual'].iloc[ii+1]]
                 outDataList+= [Y]
+                outDataList+= sectorVec
                 outDataString = str(outDataList).strip('[]')
                 #outDataString = str([*predictivePast, *popt, sortedFunds['3m'].iloc[-ii-1], Y ]).strip('[]')
 
