@@ -1,11 +1,12 @@
 import pandas as pd
 import glob, os
-import pprint
+#import pprint
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from datetime import datetime
 import sys
+
 
 def dbgPrint(*args):
     ''' Debug function '''
@@ -165,10 +166,12 @@ if __name__ == "__main__":
     dateStamp = now.strftime("%Y%m%d")
     TrainFileName = "C:\\Users\\tzurv\\python\\VScode\\scraper\\" + dateStamp + "_Train.csv"
     EvalFileName  = "C:\\Users\\tzurv\\python\\VScode\\scraper\\" + dateStamp + "_Eval.csv"
+    predictFileName  = "C:\\Users\\tzurv\\python\\VScode\\scraper\\" + dateStamp + "_Predict.csv"
     descriptionFileName  = "C:\\Users\\tzurv\\python\\VScode\\scraper\\" + dateStamp + "_Des.csv"
 
     trainFile = open(TrainFileName, 'w')
     evalFile = open(EvalFileName, 'w')
+    predictFile = open(predictFileName, 'w')
     desFileFlag = True
     desFile = open(descriptionFileName, 'w')
 
@@ -246,21 +249,27 @@ if __name__ == "__main__":
         weeksPeriod = 2*P-1
         
         # Moving history window
-        for ii in range(len(pastData)-weeksPeriod):
+        # -1 - current weed data for prediction
+        #  0 - previous week used as dev set
+        #    - the rest is training data
+        for ii in range(-1, len(pastData)-weeksPeriod):
             
-            predictivePast = pastData[-ii-weeksPeriod-1:-ii-1]
-            dbgPrint(predictivePast, pastData[-1-ii])   
-
             # get sector performance history vector
             sectorVec = allSectorsMean
             fundSectorPerformanceOnDate = allSectorsInf.loc[ (allSectorsInf['date'].dt.date == \
-                                       pd.to_datetime(dataDatesList[ii], format='%Y-%m-%d', errors='ignore')) & \
+                                       pd.to_datetime(dataDatesList[ii+1], format='%Y-%m-%d', errors='ignore')) & \
                                            (allSectorsInf['sectorName'] == fundSector ) ]
             if len(fundSectorPerformanceOnDate):
                 dbgPrint(fundSectorPerformanceOnDate[sectorSelectedColumns])
                 sectorVec = fundSectorPerformanceOnDate.iloc[0][sectorSelectedColumns].tolist()
-            
-            status, popt, predictNext = get_curve_fit(pastData[-ii-weeksPeriod-1:-ii-1])
+
+            # get data for curve_fit
+            if ii == -1:
+                predictivePast = pastData[-weeksPeriod:]
+            else:
+                predictivePast = pastData[-ii-weeksPeriod-1:-ii-1]
+
+            status, popt, predictNext = get_curve_fit(predictivePast)
             if status:
                 if False:
                     Y = 1
@@ -270,8 +279,14 @@ if __name__ == "__main__":
                     elif pastData[-2-ii]*0.9>pastData[-1-ii]:
                         print(f"Worst in 10% or more: {pastData[-2-ii]} -> {pastData[-1-ii]} ")
                         Y = 0
+                elif ii == -1:
+                    Y = None
                 else:
                     Y = pastData[-1-ii]
+            
+                # print data used for curve fit and matching Y
+                dbgPrint(predictivePast, Y)   
+
                 
                 ## add description for every data/feature entry 
                 if desFileFlag:
@@ -279,8 +294,9 @@ if __name__ == "__main__":
                     desDataString += "fit[4], "
                     desDataString += "3m, "
                     desDataString += "6m_annual, "
-                    desDataString += "Y[1], "
-                    desDataString += "Sector[6]"
+                    desDataString += "Sector[6], "
+                    # Last one assumed to be the predicted value 
+                    desDataString += "Y[1] " 
                     
                     
                 # create the data list for the prediction
@@ -288,10 +304,12 @@ if __name__ == "__main__":
                 outDataList+= [*popt]
                 outDataList+= [sortedFunds['3m'].iloc[ii+1]]
                 outDataList+= [sortedFunds['6m_annual'].iloc[ii+1]]
-                outDataList+= [Y]
                 outDataList+= sectorVec
+                # Y must be last
+                outDataList+= [Y]
+
+                # convert to string                 
                 outDataString = str(outDataList).strip('[]')
-                #outDataString = str([*predictivePast, *popt, sortedFunds['3m'].iloc[-ii-1], Y ]).strip('[]')
 
                 if desFileFlag:
                     # Write to description/headr file and close
@@ -300,8 +318,11 @@ if __name__ == "__main__":
                     desFile.close()
                     desFileFlag = False
                 
-                # write to a file
-                if ii == 0:
+                # write data to file
+                if ii == -1:
+                    predictFile.write(f"{fund}, {outDataString}\n")
+                    print(f"#'{fund}' Predict Data: {outDataString}")
+                elif ii == 0:
                     evalFile.write(f"{fund}, {outDataString}\n")
                     print(f"#'{fund}' Eval Data: {outDataString}")
                 else:
@@ -312,5 +333,6 @@ if __name__ == "__main__":
     #close files
     trainFile.close()
     evalFile.close()
+    predictFile.close()
     
     

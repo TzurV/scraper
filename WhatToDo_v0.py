@@ -31,12 +31,20 @@ class dataNormalization:
 
 class loadData:
     ''' load data functionality '''
-    def __init__(self, trainFileName, evalFileName, PATH="C:\\Users\\tzurv\\python\\VScode\\scraper\\"):
+    def __init__(self, trainFileName, evalFileName,\
+                 PredictFile=None, PATH="C:\\Users\\tzurv\\python\\VScode\\scraper\\"):
+        
         print(f"# Loading train data file {PATH+TrainFileName}")
         self.allTrainingData =  np.genfromtxt(PATH+TrainFileName, delimiter=',') 
 
         print(f"# Loading eval data file {PATH+EvalFileName}")
-        self.allEvalData     =  np.genfromtxt(PATH+EvalFileName, delimiter=',') 
+        self.allEvalData     =  np.genfromtxt(PATH+EvalFileName, delimiter=',') # , dtype=None
+        
+        if PredictFile is not None:
+            print(f"# Loading predict data file {PATH+PredictFile}")
+            self.allPredictData  =  np.genfromtxt(PATH+PredictFile, delimiter=',', dtype=str) 
+            
+            
         
     def getRawTrain(self):
         return self.allTrainingData
@@ -50,6 +58,14 @@ class loadData:
         
     def seperateOutput(self, data):
         return data[:,0:-1], data[:,-1]
+    
+    def getDataForPrediction(self):
+        '''
+        Returns
+        -------
+            funds names (class 'numpy.ndarray'>), raw data (class 'numpy.ndarray'>)
+        '''
+        return self.allPredictData[:,0], self.allPredictData[:, 1:-1].astype(float)
 
 
 class selectFeatues:
@@ -61,7 +77,8 @@ class selectFeatues:
             indxs = [x for x in range(analyzedData.shape[1])]
             #for L in range(3, analyzedData.shape[1]):
             Half = int(analyzedData.shape[1] / 2)
-            for L in range(Half+3 , Half-1, -1):
+            foundSubset = False
+            for L in range(Half+2 , Half-1, -1):
                 print(f" --------------- {L} ------------")
                 for c in itertools.combinations(indxs, L):
                     col_idx = np.asarray(c)
@@ -72,7 +89,11 @@ class selectFeatues:
                     vif["features"] = col_idx
                     vif["vif_Factor"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]    
                     if sum(vif["vif_Factor"]<10) == L:
-                        print(vif)    
+                        print(vif)   
+                        foundSubset = True
+                        
+                if foundSubset:
+                    break
     
 
 class TwoLayerNet(torch.nn.Module):
@@ -119,7 +140,7 @@ class trainingClass:
             print("# GPU not available, CPU used")    
 
 
-    def prepare(self, xtrain, ytrain):
+    def prepare(self, xtrain, ytrain, dropout=0.2):
         # change numpy representation to float and conver to pytorch tensor
         self.x = torch.from_numpy(xtrain.astype(np.float32))
         self.y = torch.from_numpy(ytrain.astype(np.float32))
@@ -141,7 +162,7 @@ class trainingClass:
         print(f"# input dim {self.x.shape}")
 
         # Construct our model by instantiating the class defined above
-        self.model = TwoLayerNet(self.D_in, self.H, self.D_out)
+        self.model = TwoLayerNet(self.D_in, self.H, self.D_out, dropout=dropout)
         self.model = self.model.to(self.device)
 
 
@@ -205,9 +226,11 @@ class trainingClass:
                 
         return loss
     
-    def train(self, iters):
+    def train(self, epochs):
+        
+        reportEvery = int(epochs/50)
 
-        for t in range(iters):
+        for t in range(epochs):
             # Forward pass: Compute predicted y by passing x to the model
             self.y_pred = self.model(self.x)
             #print(self.y_pred[:10], self.y[:10])
@@ -217,7 +240,7 @@ class trainingClass:
             #self.loss = self.my_loss(self.y_pred, self.y)
             #self.loss = self.my_loss_v1(self.y_pred, self.y)
             
-            if t % 500 == 99 :
+            if t / reportEvery == int(t/reportEvery) :
                 print(f"\t {t} {self.loss.item():0.4f}")
                 #for p, r in zip(self.y_pred[:10], self.y[:10]):
                 #    print(f"\tpredicted {p[0]:.2f} vs out {r[0]:.2f}")
@@ -230,9 +253,10 @@ class trainingClass:
         return self.model           
 
 
-    def evaluate(self, model, evalX, evalY, title="Scatter plot real vs predicted.", midRanveLimit=10):
+    def evaluate(self, model, evalX, evalY, title="Scatter plot real vs predicted.", midRanveLimit=10,\
+                 confusionMatrix=True):
 
-        print(f"Eval title {title}, size {evalY.shape}, midRanveLimit={midRanveLimit}")
+        print(f"Eval title {title}, midRanveLimit={midRanveLimit}")
         
         # evaluate
         with torch.no_grad():
@@ -244,51 +268,54 @@ class trainingClass:
         out = torch.squeeze((out)) 
         npPredicted = out.detach().numpy()
 
-        if False:
-            colors = (0,0,0)
-            area = np.pi*3
-            plt.errorbar(evalY, npPredicted, yerr=evalY-npPredicted, fmt='o')
-            plt.errorbar(evalY, evalY, fmt='x', markeredgecolor = 'r')
-            plt.title(title)
-            plt.xlabel('real')
-            plt.ylabel('predicted')
-            plt.show()    
+        # if False:
+        #     colors = (0,0,0)
+        #     area = np.pi*3
+        #     plt.errorbar(evalY, npPredicted, yerr=evalY-npPredicted, fmt='o')
+        #     plt.errorbar(evalY, evalY, fmt='x', markeredgecolor = 'r')
+        #     plt.title(title)
+        #     plt.xlabel('real')
+        #     plt.ylabel('predicted')
+        #     plt.show()    
 
-        # analyzed results 
-        # 3 bands: negative, 0<=x<midRanveLimit, midRanveLimit<=xlabel 
-        #midRanveLimit = 20
-        I = pd.Index(['Rnegative','RmidRange','RHigh'], name="rows")
-        C = pd.Index(['Pnegative','PmidRange','PHigh', 'cases', 'MSError'], name="columns")
-        dfConfusion = pd.DataFrame(data=np.zeros(shape=(3,5)), index=I, columns=C)
-        for p, r in zip(npPredicted, evalY):
-            pRange = 'PHigh'
-            if p<=0:
-                pRange='Pnegative'
-            elif p<midRanveLimit:
-                pRange='PmidRange'
-           
-            if r<0:
-                dfConfusion[pRange]['Rnegative'] += 1
-                dfConfusion['cases']['Rnegative'] += 1
-                dfConfusion['MSError']['Rnegative'] += (p-r)**2
-            elif r<midRanveLimit:
-                dfConfusion[pRange]['RmidRange'] += 1
-                dfConfusion['cases']['RmidRange'] += 1
-                dfConfusion['MSError']['RmidRange'] += (p-r)**2
-            else:
-                dfConfusion[pRange]['RHigh'] += 1
-                dfConfusion['cases']['RHigh'] += 1
-                dfConfusion['MSError']['RHigh'] += (p-r)**2
-                
-        # Average
-        for a in ['Rnegative', 'RmidRange', 'RHigh']:
-            if dfConfusion['cases'][a]>0:
-                dfConfusion['MSError'][a] /= dfConfusion['cases'][a]
+        if confusionMatrix:
+            # analyzed results 
+            # 3 bands: negative, 0<=x<midRanveLimit, midRanveLimit<=xlabel 
+            #midRanveLimit = 20
+            I = pd.Index(['Rnegative','RmidRange','RHigh'], name="rows")
+            C = pd.Index(['Pnegative','PmidRange','PHigh', 'cases', 'MSError'], name="columns")
+            dfConfusion = pd.DataFrame(data=np.zeros(shape=(3,5)), index=I, columns=C)
+            for p, r in zip(npPredicted, evalY):
+                pRange = 'PHigh'
+                if p<=0:
+                    pRange='Pnegative'
+                elif p<midRanveLimit:
+                    pRange='PmidRange'
+               
+                if r<0:
+                    dfConfusion[pRange]['Rnegative'] += 1
+                    dfConfusion['cases']['Rnegative'] += 1
+                    dfConfusion['MSError']['Rnegative'] += (p-r)**2
+                elif r<midRanveLimit:
+                    dfConfusion[pRange]['RmidRange'] += 1
+                    dfConfusion['cases']['RmidRange'] += 1
+                    dfConfusion['MSError']['RmidRange'] += (p-r)**2
+                else:
+                    dfConfusion[pRange]['RHigh'] += 1
+                    dfConfusion['cases']['RHigh'] += 1
+                    dfConfusion['MSError']['RHigh'] += (p-r)**2
+                    
+            # Average
+            for a in ['Rnegative', 'RmidRange', 'RHigh']:
+                if dfConfusion['cases'][a]>0:
+                    dfConfusion['MSError'][a] /= dfConfusion['cases'][a]
+            
+                    
+            # print confusion matrix
+            print(dfConfusion)
+            print(f"Done. \n")
         
-                
-        # print confusion matrix
-        print(dfConfusion)
-        print(f"Done. \n")
+        return npPredicted
         
        
 
@@ -301,12 +328,18 @@ class parserClass:
         parser.add_argument('--task',     '-t', help='define the required task', default='train')
         parser.add_argument('--date',     '-d', help='data files date name', required=True)
         parser.add_argument('--features', '-f', help='selected features, example -f "[1, 2, 3, 4]"', default='all')
-
+        parser.add_argument('--epochs', help='number of epochs [50000]', type=int, default=50000)
+        parser.add_argument('--dropout', help='Network dropouts', type=float, default=0.2)
+        parser.add_argument('--predict', '-p', help='predict filename', default=None)
+        
+        
         self.args = parser.parse_args(args_dict)
 
 
 
 if __name__ == "__main__":
+    # set pytorch random function seed
+    torch.manual_seed(0)
 
     # Date information 
     dateNow = datetime.datetime.now()
@@ -320,14 +353,19 @@ if __name__ == "__main__":
     
 
 
+
     # load data files
     dateStamp = localParser.args.date
     TrainFileName = dateStamp + "_Train.csv"
     EvalFileName  = dateStamp + "_Eval.csv"
-    allRawData = loadData(TrainFileName, EvalFileName)
+    PredictFileName = None
+    if localParser.args.predict is not None:
+        PredictFileName = localParser.args.predict+'.csv'
+        
+    allRawData = loadData(TrainFileName, EvalFileName, PredictFileName)
     allTrainData = allRawData.getRawTrain()
     allEvalData = allRawData.getRawEval()
-    
+        
     # Seperate traing for output
     trainX, trainYpart = allRawData.seperateOutput(allTrainData)
     
@@ -336,7 +374,7 @@ if __name__ == "__main__":
     normTrainX = dNorm.normalize(trainX)
     
     if localParser.args.task == "select":
-        print("Start to select data.")
+        print(f"Start to select data. {normTrainX.shape}")
         selectFeatues.VIFbasedSelection(normTrainX)
         sys.exit()
         
@@ -354,8 +392,8 @@ if __name__ == "__main__":
         trainer = trainingClass()
         
         # create model, move data and model to device
-        trainer.prepare(normTrainX, trainYpart)
-        trainedModel = trainer.train(50000)
+        trainer.prepare(normTrainX, trainYpart, localParser.args.dropout)
+        trainedModel = trainer.train(localParser.args.epochs)
         midRanveLimit = 20
         trainer.evaluate(trainedModel, normTrainX, trainYpart, title="Train Data",  midRanveLimit=midRanveLimit)
 
@@ -369,6 +407,22 @@ if __name__ == "__main__":
             normEvalX = normEvalX[:,col_idx]
         trainer.evaluate(trainedModel, normEvalX, evalYpart, title="Evaluation",  midRanveLimit=midRanveLimit)
        
+        # Now predict
+        if PredictFileName is not None:
+            fundsNames, predictData = allRawData.getDataForPrediction()
+            normPredictData = dNorm.normalize(predictData)
+            
+            # get relevant data column
+            if not localParser.args.features == 'all':
+                normPredictData = normPredictData[:,col_idx]
+
+            predictedPerformance = trainer.evaluate(trainedModel, normPredictData, None, title="Predict",\
+                                   midRanveLimit=midRanveLimit, confusionMatrix=False )
+            for fund, predict in zip(fundsNames, predictedPerformance):
+                nextMonth = (pow(1+predict/100, 1/12)-1)*100
+                print(f"{nextMonth:6.2f} fund {fund}  ")
+            
+
         sys.exit()
     
     print(f"# Unsupported task {localParser.args.task}")
