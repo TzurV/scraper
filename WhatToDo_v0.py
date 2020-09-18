@@ -15,6 +15,7 @@ import pandas as pd
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 import warnings
 import matplotlib.pyplot as plt
+import os
 
 class dataNormalization:
     ''' Data normalization class'''
@@ -190,7 +191,7 @@ class trainingClass:
         #loss = torch.mean((output - target)**2)
         return loss
 
-    def my_loss_v1(self, output, target, midRanveLimit=10):
+    def my_loss_v1(self, output, target, midRangeLimit=10):
         loss = 0.0
         for o, t in zip(output, target):
             dif = abs(o[0]-t[0])
@@ -198,17 +199,17 @@ class trainingClass:
                 if o[0]<0.0:
                     loss += (dif**1.5)
                     
-                elif o[0]<midRanveLimit:
+                elif o[0]<midRangeLimit:
                     loss += (dif**2)
 
                 else:
                     loss += (dif**3)
                 
-            elif t[0]<midRanveLimit:
+            elif t[0]<midRangeLimit:
                 if o[0]<0.0:
                     loss += (dif**3)
                     
-                elif o[0]<midRanveLimit:
+                elif o[0]<midRangeLimit:
                     loss += (dif**2)
 
                 else:
@@ -218,7 +219,7 @@ class trainingClass:
                 if o[0]<0.0:
                     loss += (dif**3)
                     
-                elif o[0]<midRanveLimit:
+                elif o[0]<midRangeLimit:
                     loss += (dif**1.5)
 
                 else:
@@ -226,10 +227,13 @@ class trainingClass:
                 
         return loss
     
-    def train(self, epochs):
+    def train(self, epochs, outPath):
         
         reportEvery = int(epochs/50)
 
+        lowestLoss = 1e+308
+        lowestLossOutputDir = None
+        lastSavedLoss = lowestLoss
         for t in range(epochs):
             # Forward pass: Compute predicted y by passing x to the model
             self.y_pred = self.model(self.x)
@@ -239,9 +243,43 @@ class trainingClass:
             self.loss = self.criterion(self.y_pred, self.y)
             #self.loss = self.my_loss(self.y_pred, self.y)
             #self.loss = self.my_loss_v1(self.y_pred, self.y)
+            if t == 0:
+                lowestLoss = self.loss
+                prevLoss   = self.loss
+                lastSavedLoss = self.loss + 100.0
+            elif lowestLoss < self.loss and lowestLoss==prevLoss:
+                # current model loss is higer the the previous one and 
+                # previous one was the best one so far
+                lossGain = 1-(lastSavedLoss-prevLoss)/lastSavedLoss
+                if outPath is not None:
+                    # https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html
+                    lowestLossOutputDir = outPath + "\\" + str(t-1)
+                    os.makedirs(lowestLossOutputDir)
+                    #logFileName = lowestLossOutputDir + "\\log.log"
+                    #logFile = open(logFileName, "w+")
+                    #logFile.write(f"Loss: {self.loss}")
+                    #logFile.close()
+                    
+                    modelFileName = lowestLossOutputDir + "\\model.pt"
+                    #torch.save(self.model.state_dict(), modelFileName)
+                    
+                    print(f"epoch {t-1} loss {prevLoss} lossGain {lossGain}")
+                    EPOCH = t-1
+                    LOSS = prevLoss
+                    torch.save({
+                                'epoch': EPOCH,
+                                'model_state_dict': self.model.state_dict(),
+                                #'optimizer_state_dict': optimizer.state_dict(),
+                                'loss': LOSS,
+                                }, modelFileName)
+                    
+            prevLoss   = self.loss
+            if lowestLoss>prevLoss:
+                lowestLoss = prevLoss
             
             if t / reportEvery == int(t/reportEvery) :
                 print(f"\t {t} {self.loss.item():0.4f}")
+                #lastSavedLoss *= 2.0
                 #for p, r in zip(self.y_pred[:10], self.y[:10]):
                 #    print(f"\tpredicted {p[0]:.2f} vs out {r[0]:.2f}")
 
@@ -250,13 +288,13 @@ class trainingClass:
             self.loss.backward()
             self.optimizer.step()
         
-        return self.model           
+        return self.model, lowestLossOutputDir           
 
 
-    def evaluate(self, model, evalX, evalY, title="Scatter plot real vs predicted.", midRanveLimit=10,\
+    def evaluate(self, model, evalX, evalY, title="Scatter plot real vs predicted.", midRangeLimit=10,\
                  confusionMatrix=True):
 
-        print(f"Eval title {title}, midRanveLimit={midRanveLimit}")
+        print(f"Eval title {title}, midRangeLimit={midRangeLimit}")
         
         # evaluate
         with torch.no_grad():
@@ -280,8 +318,8 @@ class trainingClass:
 
         if confusionMatrix:
             # analyzed results 
-            # 3 bands: negative, 0<=x<midRanveLimit, midRanveLimit<=xlabel 
-            #midRanveLimit = 20
+            # 3 bands: negative, 0<=x<midRangeLimit, midRangeLimit<=xlabel 
+            #midRangeLimit = 20
             I = pd.Index(['Rnegative','RmidRange','RHigh'], name="rows")
             C = pd.Index(['Pnegative','PmidRange','PHigh', 'cases', 'MSError'], name="columns")
             dfConfusion = pd.DataFrame(data=np.zeros(shape=(3,5)), index=I, columns=C)
@@ -289,14 +327,14 @@ class trainingClass:
                 pRange = 'PHigh'
                 if p<=0:
                     pRange='Pnegative'
-                elif p<midRanveLimit:
+                elif p<midRangeLimit:
                     pRange='PmidRange'
                
                 if r<0:
                     dfConfusion[pRange]['Rnegative'] += 1
                     dfConfusion['cases']['Rnegative'] += 1
                     dfConfusion['MSError']['Rnegative'] += (p-r)**2
-                elif r<midRanveLimit:
+                elif r<midRangeLimit:
                     dfConfusion[pRange]['RmidRange'] += 1
                     dfConfusion['cases']['RmidRange'] += 1
                     dfConfusion['MSError']['RmidRange'] += (p-r)**2
@@ -313,7 +351,7 @@ class trainingClass:
                     
             # print confusion matrix
             print(dfConfusion)
-            print(f"Done. \n")
+            print("Done. \n")
         
         return npPredicted
         
@@ -344,14 +382,17 @@ if __name__ == "__main__":
     # Date information 
     dateNow = datetime.datetime.now()
     print(f"running at {dateNow}")
+    
+    # use as timestamp
+    current_time = dateNow.strftime("%y%m%d_%H%M")
+    
+    
 
     if len(sys.argv)>1:
         localParser = parserClass(sys.argv[1:])
     else:
         localParser = parserClass(['-h'])
     print(f"Task: {localParser.args.task}")    
-    
-
 
 
     # load data files
@@ -393,9 +434,13 @@ if __name__ == "__main__":
         
         # create model, move data and model to device
         trainer.prepare(normTrainX, trainYpart, localParser.args.dropout)
-        trainedModel = trainer.train(localParser.args.epochs)
-        midRanveLimit = 20
-        trainer.evaluate(trainedModel, normTrainX, trainYpart, title="Train Data",  midRanveLimit=midRanveLimit)
+        outPath = "C:\\Users\\tzurv\\python\\VScode\\scraper\\Models"
+        outPath +=  "\\" + current_time
+        trainedModel, bestSavedModelsPath = trainer.train(localParser.args.epochs, outPath=outPath)
+        
+        # evaluate
+        midRangeLimit = 20
+        trainer.evaluate(trainedModel, normTrainX, trainYpart, title="Train Data",  midRangeLimit=midRangeLimit)
 
         # Seperate traing for output
         print(allEvalData.size)
@@ -405,7 +450,7 @@ if __name__ == "__main__":
         normEvalX = dNorm.normalize(evalX)
         if not localParser.args.features == 'all':
             normEvalX = normEvalX[:,col_idx]
-        trainer.evaluate(trainedModel, normEvalX, evalYpart, title="Evaluation",  midRanveLimit=midRanveLimit)
+        trainer.evaluate(trainedModel, normEvalX, evalYpart, title="Evaluation",  midRangeLimit=midRangeLimit)
        
         # Now predict
         if PredictFileName is not None:
@@ -417,7 +462,7 @@ if __name__ == "__main__":
                 normPredictData = normPredictData[:,col_idx]
 
             predictedPerformance = trainer.evaluate(trainedModel, normPredictData, None, title="Predict",\
-                                   midRanveLimit=midRanveLimit, confusionMatrix=False )
+                                   midRangeLimit=midRangeLimit, confusionMatrix=False )
             for fund, predict in zip(fundsNames, predictedPerformance):
                 nextMonth = (pow(1+predict/100, 1/12)-1)*100
                 print(f"{nextMonth:6.2f} fund {fund}  ")
