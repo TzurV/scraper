@@ -85,6 +85,7 @@ if __name__ == "__main__":
     
     print("# Load Sector Information =====================================================")
     # create empty dataframe
+    sectorSelectedColumns = ['1m', '3m', '6m', '1y', '3y', '5y']
     allSectorsInf = pd.DataFrame()
     for file in glob.glob("*_TrustNetSectors.csv"):
         print(f"Loading {file}" )
@@ -92,6 +93,12 @@ if __name__ == "__main__":
         sectorsInf = pd.read_csv(file, sep=',', dayfirst=True)
         dtm = lambda x: datetime.strptime(x, "%d/%m/%y %H:%M")
         sectorsInf["date"] = sectorsInf["date"].apply(dtm)
+        
+        # removes rows that dint include numbers 
+        #like  '21,20/09/20 09:52,IA Not yet assigned,-,-,-,-,-,-'
+        sectorsInf = sectorsInf.drop(sectorsInf[sectorsInf['1m'] == '-'].index)
+        for col in sectorSelectedColumns:
+            sectorsInf[col] = sectorsInf[col].astype(float)        
         
         # development code 
         #dbgPrint(sectorsInf.to_string())
@@ -108,8 +115,8 @@ if __name__ == "__main__":
     print(allSectorsInf.shape)
     print(allSectorsInf.columns)
     
-    sectorSelectedColumns = ['1m', '3m', '6m', '1y', '3y', '5y']
     allSectorsMean = [x for x in allSectorsInf[sectorSelectedColumns].mean()]
+    assert len(allSectorsMean) > 0, "Sectors average vector is empty. look for strings in data."
     #allSectorsMean = allSectorsMean[1:]
     dbgPrint(f"# Sectors average {[ '%.2f' % elem for elem in allSectorsMean ] }")
         
