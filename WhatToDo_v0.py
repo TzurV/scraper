@@ -40,8 +40,6 @@ class dataNormalization:
         save mean and variance
         '''
         fileName = os.path.join(filepath, 'stat.npy')
-        print(f"mena vec: {self.dataStat.mean}")
-        print(f"Var  vec: {self.dataStat.mean}")
         with open(fileName,'wb') as f:
             np.save(f, self.mean)
             np.save(f, self.variance)
@@ -51,8 +49,6 @@ class dataNormalization:
         with open(fileName,'rb') as f:
             self.mean = np.load(f)            
             self.variance = np.load(f)            
-        print(f"mena vec: {self.mean}")
-        print(f"Var  vec: {self.mean}")
 
 class loadData:
     ''' load data functionality '''
@@ -150,27 +146,52 @@ class TwoLayerNet(torch.nn.Module):
         y_pred  = self.linear3(h_relu2)
         return y_pred
 
+def setDevice():
+    # torch.cuda.is_available() checks and returns a Boolean True if a GPU is available, else it'll return False
+    is_cuda = torch.cuda.is_available()
+
+    # If we have a GPU available, we'll set our device to GPU. We'll use this device variable later in our code.
+    if is_cuda:
+        device = torch.device("cuda")
+        print("# GPU is available")
+    else:
+        device = torch.device("cpu")
+        print("# GPU not available, CPU used")   
+
+    return device
     
+    
+
 class trainingClass:
     def __init__(self, dNorm):
         
         # store a copy of data normalization object
         self.dNorm = dNorm
         
-        # torch.cuda.is_available() checks and returns a Boolean True if a GPU is available, else it'll return False
-        self.is_cuda = torch.cuda.is_available()
+        # # torch.cuda.is_available() checks and returns a Boolean True if a GPU is available, else it'll return False
+        # self.is_cuda = torch.cuda.is_available()
 
-        # If we have a GPU available, we'll set our device to GPU. We'll use this device variable later in our code.
-        if self.is_cuda:
-            self.device = torch.device("cuda")
-            print("# GPU is available")
-        else:
-            self.device = torch.device("cpu")
-            print("# GPU not available, CPU used")   
+        # # If we have a GPU available, we'll set our device to GPU. We'll use this device variable later in our code.
+        # if self.is_cuda:
+        #     self.device = torch.device("cuda")
+        #     print("# GPU is available")
+        # else:
+        #     self.device = torch.device("cpu")
+        #     print("# GPU not available, CPU used")  
+        
+        # select device to run (GPU or CPU)
+        self.device = setDevice()
             
         # initialize
         self.hparams = {}
 
+    @staticmethod
+    def createModel(hparams, device):
+        model = TwoLayerNet(hparams['D_in'], 
+                                 hparams['H'], 
+                                 hparams['D_out'], 
+                                 dropout=hparams['dropout'])
+        return model.to(device)
 
     def prepare(self, xtrain, ytrain, dropout=0.2):
         # change numpy representation to float and conver to pytorch tensor
@@ -198,9 +219,14 @@ class trainingClass:
         self.hparams['H'] = self.H
         self.hparams['D_out'] = self.D_out
         self.hparams['dropout'] = dropout
-        self.model = TwoLayerNet(self.D_in, self.H, self.D_out, dropout=dropout)
-        self.model = self.model.to(self.device)
-
+        if False:
+            self.model = TwoLayerNet(self.hparams['D_in'], 
+                                     self.hparams['H'], 
+                                     self.hparams['D_out'], 
+                                     dropout=self.hparams['dropout'])
+            self.model = self.model.to(self.device)
+        else:
+            self.model = createModel(hparams, device)
 
         #print the model
         print(self.model)
@@ -541,18 +567,35 @@ if __name__ == "__main__":
         #print(localParser.args.modelsPath, localParser.args.epoch)    
         # test loading
         modelFileName = os.path.join(localParser.args.modelsPath, localParser.args.epochNumber, "model.pt")
-        print(modelFileName)
+        print(f"# Loading {modelFileName}")
         checkpoint = torch.load(modelFileName)
-        print(checkpoint.keys())
-        
-        #model1 = CreateModel(checkpoint, device)
-        #model1.load_state_dict(checkpoint['model_state_dict'])
-        #model1.eval()
+        #print(checkpoint.keys())
+
+        # load model        
+        device = setDevice()
+        model1 = trainingClass.createModel(checkpoint, device)
+        model1.load_state_dict(checkpoint['model_state_dict'])
+        model1.eval()
         
         # load noramalozation data
         dNorm = dataNormalization(None, os.path.join(localParser.args.modelsPath, localParser.args.epochNumber))
         
-        
+        fundsNames, predictData = allRawData.getDataForPrediction()
+        normPredictData = dNorm.normalize(predictData)
+            
+        # get relevant data column
+        #if not localParser.args.features == 'all':
+        #    normPredictData = normPredictData[:,col_idx]
+
+        trainer = trainingClass(dNorm)
+
+        midRangeLimit = 20
+        predictedPerformance = trainer.evaluate(model1, normPredictData, None, title="Predict",\
+                               midRangeLimit=midRangeLimit, confusionMatrix=False )
+        for fund, predict in zip(fundsNames, predictedPerformance):
+            nextMonth = (pow(1+predict/100, 1/12)-1)*100
+            print(f"{nextMonth:6.2f} fund {fund}  ")
+   
         
         
 
