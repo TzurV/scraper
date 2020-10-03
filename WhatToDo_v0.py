@@ -226,7 +226,7 @@ class trainingClass:
                                      dropout=self.hparams['dropout'])
             self.model = self.model.to(self.device)
         else:
-            self.model = createModel(hparams, device)
+            self.model = trainingClass.createModel(self.hparams, self.device)
 
         #print the model
         print(self.model)
@@ -311,8 +311,8 @@ class trainingClass:
                 lowestLoss = self.loss
                 prevLoss   = self.loss
                 lastSavedLoss = self.loss + 100.0
-            elif lowestLoss < self.loss and lowestLoss==prevLoss \
-                and t>epochs/2:
+            elif (lowestLoss < self.loss and lowestLoss==prevLoss \
+                and t>epochs/2) or t == epochs-1:
                 # models are saved once we done ove  half of the epochs to reduce number of save models
                 # current model loss is higer the the previous one and 
                 # previous one was the best one so far
@@ -321,13 +321,8 @@ class trainingClass:
                     # https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html
                     lowestLossOutputDir = outPath + "\\" + str(t-1)
                     os.makedirs(lowestLossOutputDir)
-                    #logFileName = lowestLossOutputDir + "\\log.log"
-                    #logFile = open(logFileName, "w+")
-                    #logFile.write(f"Loss: {self.loss}")
-                    #logFile.close()
                     
                     modelFileName = lowestLossOutputDir + "\\model.pt"
-                    #torch.save(self.model.state_dict(), modelFileName)
                     
                     print(f"\t# Saving epoch {t-1} loss {prevLoss} lossGain {lossGain}")
                     EPOCH = t-1
@@ -548,7 +543,7 @@ if __name__ == "__main__":
     elif localParser.args.task == "evaluate":
         '''
         example:
-            python scraper-1\WhatToDo_v0.py -t evaluate -d 20200926 --predict 20200926_Predict --epochs 50000
+            python scraper-1\WhatToDo_v0.py  -t evaluate -d 20200926 --predict 20200926_Predict --modelsPath C:\\Users\\tzurv\\python\\VScode\\scraper\\Models\\201003_1845 -e 26766
         '''
         print("Evaluate model.")
         
