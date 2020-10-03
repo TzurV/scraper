@@ -19,16 +19,40 @@ import os
 
 class dataNormalization:
     ''' Data normalization class'''
-    def __init__(self, data):
+    def __init__(self, data, Path=None):
         self.initialized = False
-        if not type(data) is np.ndarray:
-            raise ValueError('dataNormalization required numpy array for initialization')
-        self.dataStat = stats.describe(data)
+        if Path is not None:
+            self.loadStat(Path)
+        else:
+            if not type(data) is np.ndarray:
+                raise ValueError('dataNormalization required numpy array for initialization')
+            self.dataStat = stats.describe(data)
+            self.mean = self.dataStat.mean
+            self.variance = self.dataStat.variance
         self.initialized = True
 
     def normalize(self, data):
-        return (data - self.dataStat.mean) / np.sqrt(self.dataStat.variance)
-
+        return (data - self.mean) / np.sqrt(self.variance)
+    
+    def saveStat(self, filepath):
+        '''
+        documentaion https://numpy.org/devdocs/reference/generated/numpy.save.html
+        save mean and variance
+        '''
+        fileName = os.path.join(filepath, 'stat.npy')
+        print(f"mena vec: {self.dataStat.mean}")
+        print(f"Var  vec: {self.dataStat.mean}")
+        with open(fileName,'wb') as f:
+            np.save(f, self.mean)
+            np.save(f, self.variance)
+ 
+    def loadStat(self, filepath):
+        fileName = os.path.join(filepath, 'stat.npy')
+        with open(fileName,'rb') as f:
+            self.mean = np.load(f)            
+            self.variance = np.load(f)            
+        print(f"mena vec: {self.mean}")
+        print(f"Var  vec: {self.mean}")
 
 class loadData:
     ''' load data functionality '''
@@ -128,7 +152,11 @@ class TwoLayerNet(torch.nn.Module):
 
     
 class trainingClass:
-    def __init__(self):
+    def __init__(self, dNorm):
+        
+        # store a copy of data normalization object
+        self.dNorm = dNorm
+        
         # torch.cuda.is_available() checks and returns a Boolean True if a GPU is available, else it'll return False
         self.is_cuda = torch.cuda.is_available()
 
@@ -138,7 +166,10 @@ class trainingClass:
             print("# GPU is available")
         else:
             self.device = torch.device("cpu")
-            print("# GPU not available, CPU used")    
+            print("# GPU not available, CPU used")   
+            
+        # initialize
+        self.hparams = {}
 
 
     def prepare(self, xtrain, ytrain, dropout=0.2):
@@ -163,6 +194,10 @@ class trainingClass:
         print(f"# input dim {self.x.shape}")
 
         # Construct our model by instantiating the class defined above
+        self.hparams['D_in'] = self.D_in
+        self.hparams['H'] = self.H
+        self.hparams['D_out'] = self.D_out
+        self.hparams['dropout'] = dropout
         self.model = TwoLayerNet(self.D_in, self.H, self.D_out, dropout=dropout)
         self.model = self.model.to(self.device)
 
@@ -179,6 +214,9 @@ class trainingClass:
         self.criterion = torch.nn.MSELoss(reduction='sum')
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=0.0000001, momentum=0.90, weight_decay=0.0001)
         #optimizer = torch.optim.Adam(model.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
+        
+    def model_hparameters():
+        return self.hparams
     
     def my_loss(self, output, target):
         loss = 0.0
@@ -247,7 +285,9 @@ class trainingClass:
                 lowestLoss = self.loss
                 prevLoss   = self.loss
                 lastSavedLoss = self.loss + 100.0
-            elif lowestLoss < self.loss and lowestLoss==prevLoss:
+            elif lowestLoss < self.loss and lowestLoss==prevLoss \
+                and t>epochs/2:
+                # models are saved once we done ove  half of the epochs to reduce number of save models
                 # current model loss is higer the the previous one and 
                 # previous one was the best one so far
                 lossGain = 1-(lastSavedLoss-prevLoss)/lastSavedLoss
@@ -263,7 +303,7 @@ class trainingClass:
                     modelFileName = lowestLossOutputDir + "\\model.pt"
                     #torch.save(self.model.state_dict(), modelFileName)
                     
-                    print(f"epoch {t-1} loss {prevLoss} lossGain {lossGain}")
+                    print(f"\t# Saving epoch {t-1} loss {prevLoss} lossGain {lossGain}")
                     EPOCH = t-1
                     LOSS = prevLoss
                     torch.save({
@@ -271,7 +311,10 @@ class trainingClass:
                                 'model_state_dict': self.model.state_dict(),
                                 #'optimizer_state_dict': optimizer.state_dict(),
                                 'loss': LOSS,
+                                **self.hparams,
                                 }, modelFileName)
+                    # save data normalization statistics to a file
+                    self.dNorm.saveStat(lowestLossOutputDir)
                     
             prevLoss   = self.loss
             if lowestLoss>prevLoss:
@@ -369,7 +412,8 @@ class parserClass:
         parser.add_argument('--epochs', help='number of epochs [50000]', type=int, default=50000)
         parser.add_argument('--dropout', help='Network dropouts', type=float, default=0.2)
         parser.add_argument('--predict', '-p', help='predict filename', default=None)
-        
+        parser.add_argument('--modelsPath', '-m', help='Models path', default=None)
+        parser.add_argument('--epochNumber', '-e', help='Model epoch directory', default=None)
         
         self.args = parser.parse_args(args_dict)
 
@@ -386,14 +430,12 @@ if __name__ == "__main__":
     # use as timestamp
     current_time = dateNow.strftime("%y%m%d_%H%M")
     
-    
-
+    # parse command line
     if len(sys.argv)>1:
         localParser = parserClass(sys.argv[1:])
     else:
         localParser = parserClass(['-h'])
     print(f"Task: {localParser.args.task}")    
-
 
     # load data files
     dateStamp = localParser.args.date
@@ -410,9 +452,11 @@ if __name__ == "__main__":
     # Seperate traing for output
     trainX, trainYpart = allRawData.seperateOutput(allTrainData)
     
-    # Normalize data
-    dNorm = dataNormalization(trainX)
-    normTrainX = dNorm.normalize(trainX)
+    # Normalize training data
+    if localParser.args.task == "select" or \
+        localParser.args.task == "train":
+        dNorm = dataNormalization(trainX)
+        normTrainX = dNorm.normalize(trainX)
     
     if localParser.args.task == "select":
         print(f"Start to select data. {normTrainX.shape}")
@@ -420,6 +464,11 @@ if __name__ == "__main__":
         sys.exit()
         
     elif localParser.args.task == "train":
+        '''
+        example:
+            python scraper-1\WhatToDo_v0.py  -d 20200926 --predict 20200926_Predict --epochs 50000
+        '''
+
         print("Train model.")
         col_idx = None
         if not localParser.args.features == 'all':
@@ -430,7 +479,7 @@ if __name__ == "__main__":
             normTrainX = normTrainX[:,col_idx]
         
         # create and check if cuda is available
-        trainer = trainingClass()
+        trainer = trainingClass(dNorm)
         
         # create model, move data and model to device
         trainer.prepare(normTrainX, trainYpart, localParser.args.dropout)
@@ -446,7 +495,7 @@ if __name__ == "__main__":
         print(allEvalData.size)
         evalX, evalYpart = allRawData.seperateOutput(allEvalData)
         
-        
+        # normalize eval data
         normEvalX = dNorm.normalize(evalX)
         if not localParser.args.features == 'all':
             normEvalX = normEvalX[:,col_idx]
@@ -469,6 +518,46 @@ if __name__ == "__main__":
             
 
         sys.exit()
+
+    elif localParser.args.task == "evaluate":
+        '''
+        example:
+            python scraper-1\WhatToDo_v0.py -t evaluate -d 20200926 --predict 20200926_Predict --epochs 50000
+        '''
+        print("Evaluate model.")
+        
+        # mandatory command line parameters
+        if PredictFileName is None:
+            print("\t --predict command line option is mandatory with evaluate option.")
+            print("Aborting.")
+            sys.exit(1)           
+            
+        if localParser.args.modelsPath is None:
+            print("\t --modelsPath command line option is mandatory with evaluate option.")
+            print("Aborting.")
+            sys.exit(1)           
+
+        
+        #print(localParser.args.modelsPath, localParser.args.epoch)    
+        # test loading
+        modelFileName = os.path.join(localParser.args.modelsPath, localParser.args.epochNumber, "model.pt")
+        print(modelFileName)
+        checkpoint = torch.load(modelFileName)
+        print(checkpoint.keys())
+        
+        #model1 = CreateModel(checkpoint, device)
+        #model1.load_state_dict(checkpoint['model_state_dict'])
+        #model1.eval()
+        
+        # load noramalozation data
+        dNorm = dataNormalization(None, os.path.join(localParser.args.modelsPath, localParser.args.epochNumber))
+        
+        
+        
+        
+
+        sys.exit()
+
     
     print(f"# Unsupported task {localParser.args.task}")
     parserClass(['-h'])
