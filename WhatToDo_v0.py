@@ -291,17 +291,20 @@ class trainingClass:
                 
         return loss
     
-    def train(self, epochs, outPath):
+    def train(self, epochs, outPath,  evalData=None):
         
         reportEvery = int(epochs/50)
+        
 
         lowestLoss = 1e+308
         lowestLossOutputDir = None
         lastSavedLoss = lowestLoss
         for t in range(epochs):
+            # save eval results for refernce (for verification at load time)
+            storeEvalResulrs = (int(epochs/2) == t)
+            
             # Forward pass: Compute predicted y by passing x to the model
             self.y_pred = self.model(self.x)
-            #print(self.y_pred[:10], self.y[:10])
 
             # Compute and print loss
             self.loss = self.criterion(self.y_pred, self.y)
@@ -312,7 +315,7 @@ class trainingClass:
                 prevLoss   = self.loss
                 lastSavedLoss = self.loss + 100.0
             elif (lowestLoss < self.loss and lowestLoss==prevLoss \
-                and t>epochs/2) or t == epochs-1:
+                and t>epochs/2) or storeEvalResulrs:
                 # models are saved once we done ove  half of the epochs to reduce number of save models
                 # current model loss is higer the the previous one and 
                 # previous one was the best one so far
@@ -336,6 +339,24 @@ class trainingClass:
                                 }, modelFileName)
                     # save data normalization statistics to a file
                     self.dNorm.saveStat(lowestLossOutputDir)
+                    
+                    # evaluate model with eval data 
+                    if evalData is not None and storeEvalResulrs:
+                        curStdout = sys.stdout
+                        evalOutputFileName = os.path.join(lowestLossOutputDir, "eval.txt")
+                        
+                        # redirect stdoutput to a file
+                        sys.stdout = open(evalOutputFileName,"w")
+                        print (f"stdout is redirected to a file {t} {evalOutputFileName}")
+ 
+                        # Evaluate eval data
+                        self.evaluate(self.model, evalDic['EvalX'], evalDic['evalY'], 
+                                         title=evalDic['title'],  
+                                         midRangeLimit=evalDic['midRangeLimit'])
+                        
+                        # stop rediredtion of print to stdout to a file
+                        sys.stdout.close()    
+                        sys.stdout = curStdout
                     
             prevLoss   = self.loss
             if lowestLoss>prevLoss:
@@ -491,6 +512,10 @@ if __name__ == "__main__":
         '''
 
         print("Train model.")
+        
+        # const
+        midRangeLimit = 20
+
         col_idx = None
         if not localParser.args.features == 'all':
             # expected input -f "[1, 2, 3, 4]"
@@ -506,12 +531,8 @@ if __name__ == "__main__":
         trainer.prepare(normTrainX, trainYpart, localParser.args.dropout)
         outPath = "C:\\Users\\tzurv\\python\\VScode\\scraper\\Models"
         outPath +=  "\\" + current_time
-        trainedModel, bestSavedModelsPath = trainer.train(localParser.args.epochs, outPath=outPath)
         
-        # evaluate
-        midRangeLimit = 20
-        trainer.evaluate(trainedModel, normTrainX, trainYpart, title="Train Data",  midRangeLimit=midRangeLimit)
-
+        # process eval data
         # Seperate traing for output
         print(allEvalData.size)
         evalX, evalYpart = allRawData.seperateOutput(allEvalData)
@@ -520,6 +541,21 @@ if __name__ == "__main__":
         normEvalX = dNorm.normalize(evalX)
         if not localParser.args.features == 'all':
             normEvalX = normEvalX[:,col_idx]
+
+        # Train model
+        evalDic = dict()
+        evalDic['EvalX'] = normEvalX
+        evalDic['evalY'] = evalYpart
+        evalDic['title'] = 'Eval Reference point'
+        evalDic['midRangeLimit'] = midRangeLimit        
+        trainedModel, bestSavedModelsPath = trainer.train(localParser.args.epochs,
+                                                          outPath=outPath,
+                                                          evalData=evalDic)
+        
+        # Evaluate training data
+        trainer.evaluate(trainedModel, normTrainX, trainYpart, title="Train Data", midRangeLimit=midRangeLimit)
+
+        # Evaluate eval data
         trainer.evaluate(trainedModel, normEvalX, evalYpart, title="Evaluation",  midRangeLimit=midRangeLimit)
        
         # Now predict
