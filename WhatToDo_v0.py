@@ -381,6 +381,7 @@ class trainingClass:
 
         print(f"Eval title {title}, midRangeLimit={midRangeLimit}")
         
+        print(evalX[0:2,:])
         # evaluate
         with torch.no_grad():
             localEvalX = torch.from_numpy(evalX.astype(np.float32))
@@ -408,6 +409,9 @@ class trainingClass:
             I = pd.Index(['Rnegative','RmidRange','RHigh'], name="rows")
             C = pd.Index(['Pnegative','PmidRange','PHigh', 'cases', 'MSError'], name="columns")
             dfConfusion = pd.DataFrame(data=np.zeros(shape=(3,5)), index=I, columns=C)
+            print(npPredicted, evalY)
+            for param in model.parameters():
+                print(param)
             for p, r in zip(npPredicted, evalY):
                 pRange = 'PHigh'
                 if p<=0:
@@ -580,6 +584,7 @@ if __name__ == "__main__":
         '''
         example:
             python scraper-1\WhatToDo_v0.py  -t evaluate -d 20200926 --predict 20200926_Predict --modelsPath C:\\Users\\tzurv\\python\\VScode\\scraper\\Models\\201003_1845 -e 26766
+            debugfile('C:/Users/tzurv/python/VScode/scraper/scraper-1/WhatToDo_v0.py', wdir='C:/Users/tzurv/python/VScode/scraper/scraper-1', args='-t evaluate -d 20201003 --predict 20201003_Eval --modelsPath C:/Users/tzurv/python/VScode/scraper/Models/201004_1443 -e 24999')
         '''
         print("Evaluate model.")
         
@@ -613,6 +618,12 @@ if __name__ == "__main__":
         
         fundsNames, predictData = allRawData.getDataForPrediction()
         normPredictData = dNorm.normalize(predictData)
+        
+        # check if it is eval or Predict data file
+        _tmp = allRawData.getRawEval()
+        b, evalYrow = allRawData.seperateOutput(_tmp)
+        if evalYrow[0] is None:
+            evalYrow = None
             
         # get relevant data column
         #if not localParser.args.features == 'all':
@@ -621,8 +632,8 @@ if __name__ == "__main__":
         trainer = trainingClass(dNorm)
 
         midRangeLimit = 20
-        predictedPerformance = trainer.evaluate(model1, normPredictData, None, title="Predict",\
-                               midRangeLimit=midRangeLimit, confusionMatrix=False )
+        predictedPerformance = trainer.evaluate(model1, normPredictData, evalYrow, title="Predict",\
+                               midRangeLimit=midRangeLimit, confusionMatrix=(not evalYrow is None ))
         for fund, predict in zip(fundsNames, predictedPerformance):
             nextMonth = (pow(1+predict/100, 1/12)-1)*100
             print(f"{nextMonth:6.2f} fund {fund}  ")
