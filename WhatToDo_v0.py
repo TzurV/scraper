@@ -299,6 +299,7 @@ class trainingClass:
         lowestLoss = 1e+308
         lowestLossOutputDir = None
         lastSavedLoss = lowestLoss
+        self.model.train()
         for t in range(epochs):
             # save eval results for refernce (for verification at load time)
             storeEvalResulrs = (int(epochs/2) == t)
@@ -381,8 +382,9 @@ class trainingClass:
 
         print(f"Eval title {title}, midRangeLimit={midRangeLimit}")
         
-        print(evalX[0:2,:])
+        #print(evalX[0:2,:])
         # evaluate
+        model.eval()
         with torch.no_grad():
             localEvalX = torch.from_numpy(evalX.astype(np.float32))
             localEvalX = localEvalX.to(self.device)
@@ -409,9 +411,9 @@ class trainingClass:
             I = pd.Index(['Rnegative','RmidRange','RHigh'], name="rows")
             C = pd.Index(['Pnegative','PmidRange','PHigh', 'cases', 'MSError'], name="columns")
             dfConfusion = pd.DataFrame(data=np.zeros(shape=(3,5)), index=I, columns=C)
-            print(npPredicted, evalY)
-            for param in model.parameters():
-                print(param)
+            #print(npPredicted, evalY)
+            #for param in model.parameters():
+            #    print(param)
             for p, r in zip(npPredicted, evalY):
                 pRange = 'PHigh'
                 if p<=0:
