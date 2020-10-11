@@ -1,6 +1,8 @@
 import pandas as pd
 import glob, os
 import pprint
+from datetime import datetime
+import sys
 
 if __name__ == "__main__":
 
@@ -28,6 +30,9 @@ if __name__ == "__main__":
 
         fundInf = pd.read_csv(file, sep=',')
 
+        dtm = lambda x: datetime.strptime(x, "%d/%m/%y %H:%M")
+        fundInf["date"] = fundInf["date"].apply(dtm)
+
         allFundsInf = allFundsInf.append(fundInf, ignore_index=True)
         #print(fundInf.head())
         #print(fundInf.shape)
@@ -41,9 +46,19 @@ if __name__ == "__main__":
     #print(allFundsInf.head())
     
     # conver date column to a datetime object
-    allFundsInf['date'] = pd.to_datetime(allFundsInf['date']).dt.strftime("%m/%d/%y")
+    #allFundsInf['date'] = pd.to_datetime(allFundsInf['date']).dt.strftime("%m/%d/%y")
     #print(type(allFundsInf['date']))
     
+    #dtm = lambda x: datetime.strptime(x, "%d/%m/%y %H:%M")
+    #allFundsInf["date"] = allFundsInf["date"].apply(dtm)
+    
+    #dtm1 = lambda x: datetime.date()
+    #allFundsInf["date"] = allFundsInf["date"].datetime.date
+    
+    
+    # get unique fund code
+    fundCode = lambda P: P.split('/')[-2]
+    allFundsInf["fundCode"] = allFundsInf["url"].apply(fundCode)
 
 
     #=============================
@@ -77,13 +92,15 @@ if __name__ == "__main__":
     pdSummary = pd.DataFrame(columns=COLUMN_NAMES)
 
     # group by fundname
-    groupedFundsList = allFundsInf.groupby('fundName', as_index=False)
+    #groupedFundsList = allFundsInf.groupby('fundName', as_index=False)
+    
+    # group by fundname (code)
+    groupedFundsList = allFundsInf.groupby('fundCode', as_index=False)
+    
     #print(groupedFundsList)
-    for fund, frame in groupedFundsList:
-        Holding = (fund in holdingsList)
-        print(f"\n-=> Fund {fund} , holding {Holding} <=-")
-        if Holding:
-            holdingsList[fund] = True
+    for fundCode, frame in groupedFundsList:
+
+
         #print(frame.sort_values(by="date"))
         sortedFunds = frame.drop_duplicates(subset ="date", keep = False)
         #sortedFunds = frame1.sort_values(by="date", ascending=True)
@@ -93,9 +110,20 @@ if __name__ == "__main__":
         # date  column becomes index column
         sortedFunds.set_index('date', drop=False, append=False, inplace=True, verify_integrity=False)
         sortedFunds.sort_index()
+
         # reverse order
         sortedFunds = sortedFunds.iloc[::-1]
+
+        # get fund name
+        fund = sortedFunds.fundName.iloc[0]
+
+        Holding = (fund in holdingsList)
+        print(f"\n-=> Fund {fund} , holding {Holding} <=-")
+        print(f"\t\tCode:{fundCode}")
+        if Holding:
+            holdingsList[fund] = True
         print(sortedFunds[['Quartile', 'FERisk', '3m', '6m', '1y', '3y', '5y' ]])
+        
 
         #print(sortedFunds[['date', 'Quartile', 'FERisk', '3m', '6m', '1y', '3y', '5y' ]])
         
