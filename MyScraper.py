@@ -225,6 +225,8 @@ class trustnetInf:
 
         if not self._first:
             # open new blank tab
+            #print(len(self.driver.window_handles))
+            self.driver.switch_to.window(self.driver.window_handles[0])
             self.driver.execute_script("window.open();")
             time.sleep(5)
 
@@ -353,6 +355,11 @@ class trustnetInf:
             
             # success 
             finally:
+                # close tab 
+                # (source: https://medium.com/@pavel.tashev/python-and-selenium-open-focus-and-close-a-new-tab-4cc606b73388)
+                self.driver.close()
+                time.sleep(5)
+                # return connected information in dataframe
                 return True, pd.DataFrame(fundDict, index=[0])
 
         # failed 
