@@ -238,7 +238,23 @@ class trustnetInf:
         print("Get status: ", status)
 
         if self._first :
-            input("\n ------------------ \n >> Set Agree options befor provessing: \n ")
+            #<button tabindex="0" type="button" mode="primary" class="sc-bwzfXH bbIVrv">ACCEPT ALL</button>
+            #XPATH: "/html/body/div[1]/div/div/div/div[2]/div/button[2]"
+            #https://selenium-python.readthedocs.io/getting-started.html Section:  2.2. Example Explained
+            #  click 'Accept ALL'
+            elem = self.driver.find_element_by_xpath(u'/html/body/div[1]/div/div/div/div[2]/div/button[2]')
+            elem.click()
+            
+            #Select 'I am a private investor'
+            elem = self.driver.find_element_by_xpath("/html/body/user-type-popup/div[1]/div[3]/div/div[1]/p[5]/label/span")
+            elem.click()
+
+            # Click 'I agree'
+            elem = self.driver.find_element_by_xpath("/html/body/user-type-popup/div[1]/div[3]/div/div[2]/p[3]")
+            elem.click()
+            
+                 
+            #input("\n ------------------ \n >> Set Agree options befor provessing: \n ")
             self._first = False
 
         _statusOK = True
