@@ -41,19 +41,39 @@ if __name__ == "__main__":
     print("-------- ALL ----------------")
     print(allFundsInf.shape)
     print(allFundsInf.columns)
-    #print(allFundsInf.head())
-    #print(allFundsInf.columns)
-    #print(allFundsInf.head())
-    
-    # conver date column to a datetime object
-    #allFundsInf['date'] = pd.to_datetime(allFundsInf['date']).dt.strftime("%m/%d/%y")
-    #print(type(allFundsInf['date']))
-    
-    #dtm = lambda x: datetime.strptime(x, "%d/%m/%y %H:%M")
-    #allFundsInf["date"] = allFundsInf["date"].apply(dtm)
-    
-    #dtm1 = lambda x: datetime.date()
-    #allFundsInf["date"] = allFundsInf["date"].datetime.date
+ 
+
+    print("# Load Sector Information =====================================================")
+    # create empty dataframe
+    sectorSelectedColumns = ['1m', '3m', '6m', '1y', '3y', '5y']
+    allSectorsInf = pd.DataFrame()
+    for file in glob.glob("*_TrustNetSectors.csv"):
+        print(f"Loading {file}" )
+
+        sectorsInf = pd.read_csv(file, sep=',', dayfirst=True)
+        dtm = lambda x: datetime.strptime(x, "%d/%m/%y %H:%M")
+        sectorsInf["date"] = sectorsInf["date"].apply(dtm)
+        
+        # removes rows that dint include numbers 
+        #like  '21,20/09/20 09:52,IA Not yet assigned,-,-,-,-,-,-'
+        sectorsInf = sectorsInf.drop(sectorsInf[sectorsInf['1m'] == '-'].index)
+        for col in sectorSelectedColumns:
+            sectorsInf[col] = sectorsInf[col].astype(float)        
+        
+        # development code 
+        #dbgPrint(sectorsInf.to_string())
+        #dbgPrint(sectorsInf.loc[sectorsInf['sectorName'] == 'IA Flexible Investment'].index)
+        #dbgPrint(sectorsInf.loc[ (sectorsInf['date'] == pd.to_datetime('2020-08-20 15:53:00', format='%Y-%m-%d %H:%M:%S', errors='ignore')) &\
+        #                        (sectorsInf['sectorName'] == 'IA Flexible Investment') ])
+        #dbgPrint(sectorsInf.loc[ (sectorsInf['date'].dt.date == pd.to_datetime('2020-08-20', format='%Y-%m-%d', errors='ignore')) &\
+        #                        (sectorsInf['sectorName'] == 'IA Flexible Investment') ])
+        
+        allSectorsInf = allSectorsInf.append(sectorsInf, ignore_index=True)
+
+    print("-------- ALL ----------------")
+    print(allSectorsInf.shape)
+    print(allSectorsInf.columns)
+    #sys.exit(0)
     
     
     # get unique fund code
@@ -88,7 +108,7 @@ if __name__ == "__main__":
     #    print(sector, fund, date)
 
     # create report
-    COLUMN_NAMES=['fundName', 'Holding', 'worsenQuartile', 'worsenFERisk']
+    COLUMN_NAMES=['fundName', 'Holding', 'worsenQuartile', 'worsenFERisk', 'worse3mThanSector']
     pdSummary = pd.DataFrame(columns=COLUMN_NAMES)
 
     # group by fundname
@@ -117,13 +137,28 @@ if __name__ == "__main__":
         # get fund name
         fund = sortedFunds.fundName.iloc[0]
 
+        # get Fund sector
+        fundSector = sortedFunds['Sector'][0]
+
+        latestDate = sortedFunds.date.iloc[0]
+        print(f"Latest date {latestDate}")
+
         Holding = (fund in holdingsList)
         print(f"\n-=> Fund {fund} , holding {Holding} <=-")
         print(f"\t\tCode:{fundCode}")
         if Holding:
             holdingsList[fund] = True
         print(sortedFunds[['Quartile', 'FERisk', '3m', '6m', '1y', '3y', '5y' ]])
-        
+
+        worse3MthanSector = False
+        fundSectorPerformanceOnDate = allSectorsInf.loc[ (allSectorsInf['date'].dt.date == \
+                                   pd.to_datetime(latestDate, format='%Y-%m-%d', errors='ignore')) & \
+                                       (allSectorsInf['sectorName'] == fundSector ) ]
+        if len(fundSectorPerformanceOnDate):
+            #print(fundSectorPerformanceOnDate[sectorSelectedColumns])
+            sector3m = float(fundSectorPerformanceOnDate[sectorSelectedColumns]['3m'])
+            fund3m = float(sortedFunds.iloc[0]['3m'])
+            worse3MthanSector = bool(fund3m<sector3m)
 
         #print(sortedFunds[['date', 'Quartile', 'FERisk', '3m', '6m', '1y', '3y', '5y' ]])
         
@@ -138,13 +173,18 @@ if __name__ == "__main__":
                 worsenQuartile = True
             if(lastFERisk*0.95>sortedFunds.FERisk.iloc[i]):
                 worsenFERisk = True
-        if worsenQuartile or worsenFERisk:
+        if worsenQuartile or worsenFERisk or worse3MthanSector:
             print("\t#==================== Check this one =================")
-            print(f"\t# {worsenQuartile}: worsen Quartile, higher FERisk: {worsenFERisk}  \n")
+            print(f"\t# {worsenQuartile}: worsen Quartile, higher FERisk: {worsenFERisk}, worst compare to Sector 3m: {worse3MthanSector} ")
+            if worse3MthanSector:
+                print(f"\t\tSector {sector3m} Fund {fund3m} -> {worse3MthanSector}")
+            print("==\n")
             pdSummary = pdSummary.append({'fundName':fund, 
                                           'Holding':Holding ,
                                           'worsenQuartile':worsenQuartile, 
-                                          'worsenFERisk':worsenFERisk}, ignore_index=True)
+                                          'worsenFERisk':worsenFERisk,
+                                          'worse3mThanSector':worse3MthanSector}, ignore_index=True)
+        #sys.exit(0)
             
 
     print("----------- Check if all holdings are monitored --------")
