@@ -6,7 +6,7 @@ certifi==2020.6.20
 cffi==1.14.0
 chromedriver-binary==83.0.4103.39.0
 colorama==0.4.3
-cryptography==2.9.2
+cryptography==3.2
 cycler==0.10.0
 decorator==4.4.2
 defusedxml==0.6.0
