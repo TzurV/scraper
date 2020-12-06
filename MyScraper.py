@@ -379,6 +379,10 @@ class trustnetInf:
                 return True, pd.DataFrame(fundDict, index=[0])
 
         # failed 
+        # close tab 
+        # (source: https://medium.com/@pavel.tashev/python-and-selenium-open-focus-and-close-a-new-tab-4cc606b73388)
+        self.driver.close()
+        time.sleep(5)
         return False, _fundInf
 
 
@@ -604,15 +608,22 @@ if __name__ == "__main__":
         for url in fh:
             totURLs += 1 
             url = url.rstrip("\n")
-            print(url)       
-            Status, fundInf = ChromeInstance.getFundInf_v2(url)
-            
-            if Status and not fundInf.empty:
-                totSuccessful += 1
-                fundInf.loc[0, 'date'] = current_time
-                fundInf.loc[0, 'url'] = url
-                allFundsInf = allFundsInf.append(fundInf, ignore_index=True)
-                print(allFundsInf)
+            print(url) 
+            reTries = 1
+            while reTries<3:
+                Status, fundInf = ChromeInstance.getFundInf_v2(url)
+                reTries += 1
+                
+                if Status and not fundInf.empty:
+                    totSuccessful += 1
+                    fundInf.loc[0, 'date'] = current_time
+                    fundInf.loc[0, 'url'] = url
+                    allFundsInf = allFundsInf.append(fundInf, ignore_index=True)
+                    print(allFundsInf)
+                    reTries=100
+                else:
+                    print(f"# Trying again {reTries} to fetch data ")
+                    
 
 
     # save all funds  information 
