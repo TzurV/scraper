@@ -60,8 +60,10 @@ from openpyxl import load_workbook
 
 class MyHoldingsExcell:
     def __init__(self):
-        self.AllHoldingsFile = "E:/Family/צור/bank/Fidelity/AllHoldings_UpdatedCopy.xlsx"
-        self.workbook = load_workbook(filename=self.AllHoldingsFile)
+        
+        self.AllHoldingsFile = "E:/Family/צור/bank/Fidelity/AllHoldings_Updated.xlsx"
+        print(f"# getting iformation from {self.AllHoldingsFile}.")
+        self.workbook = load_workbook(filename=self.AllHoldingsFile, data_only=True)
         pass
 
     def getTrackingListURLs(self):
@@ -73,7 +75,7 @@ class MyHoldingsExcell:
         totHoldings = 0
         for indx in range(3, len(trackingURLsColumn)):
             haveIt = False
-            if holdingColumn[indx].value:
+            if holdingColumn[indx].value :
                 haveIt = True
                 totHoldings += 1
                 

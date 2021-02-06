@@ -8,22 +8,26 @@ if __name__ == "__main__":
 
     #================================
     # load current holdings from Holdings.txt
-    holdingsList = {}
-    HoldingsFile = "Holdings.txt"
-    print("# Loading current holdings funds list:")
-    with open(HoldingsFile) as fp:
-        line = fp.readline()
+    # holdingsList = {}
+    # HoldingsFile = "Holdings.txt"
+    # print("# Loading current holdings funds list:")
+    # with open(HoldingsFile) as fp:
+    #     line = fp.readline()
 
-        while line:
-            print("Fund |{}|".format(line.strip()))
-            holdingsList[line.strip()] = False
-            line = fp.readline()
+    #     while line:
+    #         print("Fund |{}|".format(line.strip()))
+    #         holdingsList[line.strip()] = False
+    #         line = fp.readline()
 
     print("#=====================================================")
+    print("-------- loading '*_FundsInf.csv'  ----------------")
+
     # create empty dataframe
     allFundsInf = pd.DataFrame()
+    loadedFile = 0
     for file in glob.glob("*_FundsInf.csv"):
-        print(f"Loading {file}" )
+        # print(f"Loading {file}" )
+        loadedFile +=1
 
         # loading examples
         #https://chrisalbon.com/python/data_wrangling/pandas_dataframe_importing_csv/
@@ -38,9 +42,18 @@ if __name__ == "__main__":
         #print(fundInf.shape)
         #print(fundInf.columns)
 
-    print("-------- ALL ----------------")
-    print(allFundsInf.shape)
+    print(f"# Total '*_FundsInf.csv' files loaded {loadedFile}")
+    #print(allFundsInf.shape)
     print(allFundsInf.columns)
+
+    # update holdingsList
+    print(f"# gathering holding information from {file}")
+    holdingsList = {}
+    for fund in fundInf.itertuples():
+        if fund.Hold:
+            holdingsList[fund.fundName] = False
+              
+    print("-------- loaded completed ----------------")
  
 
     print("# Load Sector Information =====================================================")
@@ -54,7 +67,7 @@ if __name__ == "__main__":
         dtm = lambda x: datetime.strptime(x, "%d/%m/%y %H:%M")
         sectorsInf["date"] = sectorsInf["date"].apply(dtm)
         
-        # removes rows that dint include numbers 
+        # removes rows that dont include numbers 
         #like  '21,20/09/20 09:52,IA Not yet assigned,-,-,-,-,-,-'
         sectorsInf = sectorsInf.drop(sectorsInf[sectorsInf['1m'] == '-'].index)
         for col in sectorSelectedColumns:
@@ -196,20 +209,7 @@ if __name__ == "__main__":
 
     print("")
     print("====== Observations summary ============")
-    print(pdSummary.to_string())
-
-    #print(type(A), A.shape)
-    #AllSectorsdict = AllSectors.to_dict()
-    #for sector in AllSectorsdict:
-    #    print(f"A[{sector}]={AllSectorsdict[sector]}")
-    #
-    #    # Conditional Selection
-    #    FundsInSector = allFundsInf.loc[(allFundsInf.Sector == sector)]
-    #    print(FundsInSector.shape)
-    #    for r in range(len(FundsInSector.index)):
-    #        print(FundsInSector.iloc[r,:])
-    #    #for fund in FundsInSector:
-    #    #print(type(FundsInSector))
+    print(pdSummary.sort_values(by=['Holding'], ascending=False).to_string())
 
 
 
