@@ -60,7 +60,7 @@ Empty_fund_df = pd.DataFrame(columns = column_names)
 
 
 #--------------------------------
-#from selenium import webdriver
+# from selenium import webdriver
 class WebTable:
     def __init__(self, webtable):
        self.table = webtable
@@ -149,34 +149,6 @@ class WebTable:
         cellData = self.table.find_element_by_xpath("//tr["+str(row_number)+"]/td["+str(column_number)+"]").text
         return cellData
 
-class Test(unittest.TestCase):
-    def test_web_table(self):
-        #driver = webdriver.Chrome(executable_path=r'D:/PATH/chromedriver.exe')
-        driver = webdriver.Chrome()
-        driver.implicitly_wait(30)
-
-        #/html/body/div[1]/div/div[1]/div/button[2]
-
-
-        driver.get("https://chercher.tech/practice/table")
-        w = WebTable(driver.find_element_by_xpath("//table[@id='webtable']"))
-
-        print("No of rows : ", w.get_row_count())
-        print("------------------------------------")
-        print("No of cols : ", w.get_column_count())
-        print("------------------------------------")
-        print("Table size : ", w.get_table_size())
-        print("------------------------------------")
-        print("First row data : ", w.row_data(1))
-        print("------------------------------------")
-        print("First column data : ", w.column_data(1))
-        print("------------------------------------")
-        print("All table data : ", w.get_all_data())
-        print("------------------------------------")
-        print("presence of data : ", w.presence_of_data("Chercher.tech"))
-        print("------------------------------------")
-        print("Get data from Cell : ", w.get_cell_data(2, 2))
-
 def is_number(n):
     try:
         float(n)   # Type-casting the string to `float`.
@@ -227,7 +199,6 @@ class trustnetInf:
             elem = self.driver.find_element_by_xpath("/html/body/user-type-popup/div[1]/div[3]/div/div[2]/p[3]")
             elem.click()
             
-                 
             #input("\n ------------------ \n >> Set Agree options befor provessing: \n ")
             self._first = False
 
@@ -360,111 +331,8 @@ class trustnetInf:
         return False, _fundInf
 
 
-    def getFundInf(self, fundUrl):
-        status = self.driver.get(fundUrl)
-        self.driver.implicitly_wait(10)
-        print("Get status: ", status)
-
-        if self._first :
-            input("\n ------------------ \n >> Set Agree options befor provessing: \n ")
-            self._first = False
-
-        _statusOK = True
-        fundInf = Empty_fund_df.copy()
-
-        #/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div/div/div[2]/cumulative-performance/div[1]/performance-table/table
-
-        try:
-            TableXpath = "/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div[1]/div/div[1]/cumulative-performance"
-            w1 = WebTable(self.driver.find_element_by_xpath(TableXpath))
-            print(w1.get_text())
-
-        except NoSuchElementException:
-            print(f"webpage {fundUrl} don't include required performance table")
-            _statusOK = False
-            
-        except Exception as ex:
-            print(ex) 
-            _statusOK = False
-
-        if not _statusOK:
-            _statusOK = True
-
-            try:
-                TableXpath = "/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div/div/div[2]/cumulative-performance"
-                w1 = WebTable(self.driver.find_element_by_xpath(TableXpath))
-                print(w1.get_text())
-
-            except NoSuchElementException:
-                print(f"webpage {fundUrl} don't include required performance table")
-                _statusOK = False
-                
-            except Exception as ex:
-                print(ex) 
-                _statusOK = False
-
-        if not _statusOK:
-            return False, fundInf
-
-        # get performance 
-        try:
-            fundDict =  {   "date":"NA",
-                            "fundName": "NA",
-                            "3m": "NA",
-                            "6m": "NA",
-                            "1y": "NA",
-                            "3y": "NA",
-                            "5y": "NA",
-                            "Quartile": "NA",
-                            "FERisk": "NA"}
-
-            #<span ng-if="!perfData.isSector &amp;&amp; perfData.name !== 'Position'" class="fundName bold_text">JPM Asia Growth C Acc</span>
-            '/html/body/div[1]/div[2]/div[1]/div/fund-factsheet/section/div[2]/fund-tabs/div/div/fund-tab[1]/div/overview/div/div[1]/div[2]/div[1]/div/div[1]/cumulative-performance/div[1]/performance-table/div[1]/span[2]'
-            _fundName = self.driver.find_element_by_class_name("fundName")
-            fundDict["fundName"] = _fundName.text
-
-            row_number = 2 - 1 # get_cell_data has 'row_number = row_number + 1'
-            fundDict["3m"] = float(w1.get_cell_data(row_number, 2))
-            fundDict["6m"] = float(w1.get_cell_data(row_number, 3))
-            fundDict["1y"] = float(w1.get_cell_data(row_number, 4))
-
-            #if w1.check_cell_data(row_number, 5):
-            _3y = w1.get_cell_data(row_number, 4)
-            if is_number(_3y):
-                fundDict["3y"] = float(_3y)
-
-            #if w1.check_cell_data(row_number, 6):
-            _5y = w1.get_cell_data(row_number, 6)
-            if is_number(_5y):
-                fundDict["5y"] = float(_5y)
-
-            if w1.check_cell_data(4,2):
-                fundDict["Quartile"] = int(w1.get_cell_data(4, 2))
-            
-            # https://www.selenium.dev/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webelement.html
-
-        except Exception as ex:
-            print(f"Failed to get performance for {fundUrl}")
-            print(ex) 
-            return False, fundInf
-
-        try:
-            #<span class="risk_score">72</span>
-            _FERisk = self.driver.find_element_by_class_name("risk_score")
-            fundDict["FERisk"] = int(_FERisk.text)
-    
-        except NoSuchElementException:  #spelling error making this code not work as expected
-            pass
-
-        # add the data
-        print(fundDict)
-        
-    
-#        return True, fundInf.append(fundDict, ignore_index=True)
-        return True, pd.DataFrame(fundDict, index=[0])
-
-
-
+'''
+'''
 if __name__ == "__main__":
     #unittest.main()
 
@@ -488,11 +356,11 @@ if __name__ == "__main__":
 
     if True:
         # SECTOR ANALYSIS
-        print(f"Loading sectors performance")
+        print("Loading sectors performance")
         url = "https://www.trustnet.com/fund/sectors/performance?universe=O"
         _statusOK, chrom_driver = ChromeInstance.getFundInf_v2(url, openAndReturn=True)
         if _statusOK:
-            print(f"Get Sectors data.")
+            print("Get Sectors data.")
 
             try:
                 _notFoundTable = True
