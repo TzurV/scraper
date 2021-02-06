@@ -12,14 +12,14 @@
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 
-import chromedriver_binary # Adds chromedriver binary to path
+#import chromedriver_binary # Adds chromedriver binary to path
 
 import pandas as pd
 from datetime import datetime
 import re
 
 
-import sys
+#import sys
 import time
 
 #============================================
@@ -45,17 +45,54 @@ import time
 
 #================================= End Example =================================
 
-import unittest
+#------------------------------------------------------------------------
+'''
 
-#driver = webdriver.Chrome()
-#driver.get("https://www.trustnet.com/factsheets/o/a6x2/first-state-global-listed-infrastructure")
+Getting Started With openpyxl
+
+https://realpython.com/openpyxl-excel-spreadsheets-python/
+pip install openpyxl
+'''
 
 
+#from openpyxl import Workbook
+from openpyxl import load_workbook
+
+class MyHoldingsExcell:
+    def __init__(self):
+        self.AllHoldingsFile = "E:/Family/צור/bank/Fidelity/AllHoldings_UpdatedCopy.xlsx"
+        self.workbook = load_workbook(filename=self.AllHoldingsFile)
+        pass
+
+    def getTrackingListURLs(self):
+        TrackingList_sheet = self.workbook["TrackingList"]
+        trackingURLsColumn = TrackingList_sheet["E:E"]
+        holdingColumn = TrackingList_sheet["F:F"]
+        
+        trackingURLsList = []
+        totHoldings = 0
+        for indx in range(3, len(trackingURLsColumn)):
+            haveIt = False
+            if holdingColumn[indx].value:
+                haveIt = True
+                totHoldings += 1
+                
+            trackingURLsList.append({"URL":trackingURLsColumn[indx].value,
+                                     "Hold":haveIt})
+           #print(f"{haveIt} {trackingURLsColumn[indx].value}")
+        
+        print(f"# URLs summary: {len(trackingURLsList)} loaded and listed holding {totHoldings}")
+        return trackingURLsList
+    
+
+#------------------------------------------------------------------------
+'''
+'''
 # https://www.techbeamers.com/handling-html-tables-selenium-webdriver/
 # https://chercher.tech/python/table-selenium-python
 
 # globals
-column_names = ["date", "fundName", "Quartile", "FERisk", "3m", "6m", "1y", "3y", "5y"]
+column_names = ["date", "fundName", "Quartile", "FERisk", "3m", "6m", "1y", "3y", "5y", "Hold"]
 Empty_fund_df = pd.DataFrame(columns = column_names)
 
 
@@ -208,9 +245,6 @@ class trustnetInf:
         if openAndReturn:
             return _statusOK, self.driver
     
-        # empty dataFrame
-        _fundInf = Empty_fund_df.copy()
-
         print("Check point 1 ! ")
 
         # dictionary for gathering information from web page
@@ -224,7 +258,8 @@ class trustnetInf:
                         "Quartile": "NA",
                         "FERisk": "NA",
                         "Sector": "NA",
-                        "SectorUrl": "NA"}
+                        "SectorUrl": "NA",
+                        "Hold": False}
 
         print("Check point 2 ! ")
         time.sleep(5)
@@ -328,13 +363,16 @@ class trustnetInf:
         # (source: https://medium.com/@pavel.tashev/python-and-selenium-open-focus-and-close-a-new-tab-4cc606b73388)
         self.driver.close()
         time.sleep(5)
+
+        # Create empty dataFrame
+        _fundInf = Empty_fund_df.copy()
+        
         return False, _fundInf
 
 
 '''
 '''
 if __name__ == "__main__":
-    #unittest.main()
 
     #----------------------
     # Get current time date  
@@ -347,6 +385,11 @@ if __name__ == "__main__":
 
     # collect all funds information
     allFundsInf = Empty_fund_df.copy()
+
+
+    # get url list from trcking urls from excel
+    myHoldingsExcell = MyHoldingsExcell()
+    trackingURLsList = myHoldingsExcell.getTrackingListURLs()
 
 
     #============
@@ -406,68 +449,45 @@ if __name__ == "__main__":
                 print(ex) 
                 _statusOK = False
        
-    # dev  case for 2 funds
+    
+    # for backwards compatibility, create list from the file
     if False:
-        # test 
-        #   https://www.trustnet.com/factsheets/o/k5lq/fidelity-global-health-care
-        #   https://www.trustnet.com/factsheets/o/ngpb/baillie-gifford-positive-change-b-acc
-        #   https://www.trustnet.com/factsheets/o/nbh5/lindsell-train-global-equity-b-gbp
+        # clear list 
+        trackingURLsList.clear()
+        
+        # don't include information on holdings
+        with open('FundsUrls.txt', 'r') as fh:
+            for url in fh:
+                trackingURLsList.append({"URL":url,
+                                         "Hold":False})
 
-        url = "https://www.trustnet.com/factsheets/o/ngpb/baillie-gifford-positive-change-b-acc"
-        Status, fundInf = ChromeInstance.getFundInf_v2(url)
-        print(Status)
-        print(fundInf)
-        if Status and not fundInf.empty:
-            fundInf.loc[0, 'date'] = current_time
-            fundInf.loc[0, 'url'] = url
-            allFundsInf = allFundsInf.append(fundInf, ignore_index=True)
-            #allFundsInf = allFundsInf_tmp.copy()
-
-        url = "https://www.trustnet.com/factsheets/o/ngpb/baillie-gifford-positive-change-b-acc"
-        Status, fundInf = ChromeInstance.getFundInf_v2(url)
-        print(Status)
-        print(fundInf)
-        if Status and not fundInf.empty:
-            fundInf.loc[0, 'date'] = current_time
-            fundInf.loc[0, 'url'] = url
-            allFundsInf = allFundsInf.append(fundInf, ignore_index=True)
-
-        print(allFundsInf)
-
-        ## https://chrisalbon.com/python/data_wrangling/pandas_dataframe_importing_csv/
-        allFundsInf.to_csv("C:\\Users\\tzurv\\python\\VScode\\scraper\\DevFundsInf.csv", sep='\t', float_format='%.2f')
-
-        allFundsInf_Verify = pd.read_csv('C:\\Users\\tzurv\\python\\VScode\\scraper\\DevFundsInf.csv', sep='\t')
-        print(allFundsInf_Verify)
-
-        print("exit Main!")
-        sys.exit(0)
- 
+        
     # loop over a list in a file
     totURLs = 0
     totSuccessful = 0
-    with open('FundsUrls.txt', 'r') as fh:
-        for url in fh:
-            totURLs += 1 
-            url = url.rstrip("\n")
-            print(url) 
-            reTries = 1
-            while reTries<3:
-                Status, fundInf = ChromeInstance.getFundInf_v2(url)
-                reTries += 1
+    for URLinf in trackingURLsList:
+        url = URLinf['URL']
+        
+        totURLs += 1 
+        url = url.rstrip("\n")
+        print(url) 
+        reTries = 1
+        while reTries<3:
+            Status, fundInf = ChromeInstance.getFundInf_v2(url)
+            reTries += 1
+            
+            if Status and not fundInf.empty:
+                totSuccessful += 1
+                fundInf.loc[0, 'date'] = current_time
+                fundInf.loc[0, 'url'] = url
+                fundInf.loc[0, 'Hold'] = URLinf['Hold']
                 
-                if Status and not fundInf.empty:
-                    totSuccessful += 1
-                    fundInf.loc[0, 'date'] = current_time
-                    fundInf.loc[0, 'url'] = url
-                    allFundsInf = allFundsInf.append(fundInf, ignore_index=True)
-                    print(allFundsInf)
-                    reTries=100
-                else:
-                    print(f"# Trying again {reTries} to fetch data ")
-                    
-
-
+                allFundsInf = allFundsInf.append(fundInf, ignore_index=True)
+                print(allFundsInf)
+                reTries=100
+            else:
+                print(f"# Trying again {reTries} to fetch data ")
+                
     # save all funds  information 
     ## https://chrisalbon.com/python/data_wrangling/pandas_dataframe_importing_csv/
     fileName = "C:\\Users\\tzurv\\python\\VScode\\scraper\\" + dateStamp + "_FundsInf.csv"
