@@ -23,33 +23,7 @@ import sys
 import time
 
 #============================================
-# (Scraper) C:\Users\...\scraper>pip freeze
-# astroid==2.4.0
-# certifi==2020.4.5.1
-# cffi==1.14.0
-# chromedriver-binary==83.0.4103.39.0
-# colorama==0.4.3
-# cryptography==2.9.2
-# idna==2.9
-# isort==4.3.21
-# lazy-object-proxy==1.4.3
-# mccabe==0.6.1
-# numpy==1.18.5
-# pandas==1.0.4
-# pycparser==2.20
-# pylint==2.5.0
-# pyOpenSSL==19.1.0
-# PySocks==1.7.1
-# python-dateutil==2.8.1
-# pytz==2020.1
-# selenium==3.141.0
-# six==1.14.0
-# toml==0.10.0
-# typed-ast==1.4.1
-# urllib3==1.25.8
-# win-inet-pton==1.1.0
-# wincertstore==0.2
-# wrapt==1.11.2
+# (Scraper) C:\Users\...\scraper>pip freeze  > requirements.txt
 
 #https://pip.pypa.io/en/stable/reference/pip_freeze/
 #$ env1/bin/pip freeze > requirements.txt
