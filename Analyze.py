@@ -4,6 +4,9 @@ import pprint
 from datetime import datetime
 import sys
 
+import warnings
+warnings.filterwarnings('ignore')
+
 if __name__ == "__main__":
 
     #================================
@@ -60,8 +63,10 @@ if __name__ == "__main__":
     # create empty dataframe
     sectorSelectedColumns = ['1m', '3m', '6m', '1y', '3y', '5y']
     allSectorsInf = pd.DataFrame()
+    totalSectorsInfFiles = 0
     for file in glob.glob("*_TrustNetSectors.csv"):
-        print(f"Loading {file}" )
+        #print(f"Loading {file}" )
+        totalSectorsInfFiles += 1
 
         sectorsInf = pd.read_csv(file, sep=',', dayfirst=True)
         dtm = lambda x: datetime.strptime(x, "%d/%m/%y %H:%M")
@@ -84,6 +89,8 @@ if __name__ == "__main__":
         allSectorsInf = allSectorsInf.append(sectorsInf, ignore_index=True)
 
     print("-------- ALL ----------------")
+    print(f"# Total '*_TrustNetSectors.csv' files loaded {totalSectorsInfFiles}")
+    print(f"Latest file is {file}")
     print(allSectorsInf.shape)
     print(allSectorsInf.columns)
     #sys.exit(0)
