@@ -34,7 +34,7 @@ def addPerformanceOrder(sectorsInf, columnName):
     return sortedByColumn
 
 def loadSectorInf(historyWeeks = 8):
-    print("# Load Sector Information =====================================================")
+    print("# Load Sector Information")
     # create empty dataframe
     sectorSelectedColumns = ['1m', '3m', '6m', '1y', '3y', '5y']
     allSectorsInf = pd.DataFrame()
@@ -66,7 +66,6 @@ def loadSectorInf(historyWeeks = 8):
             else:
                 sectorTop5counter[sector] = 1
         
-
         # add date information to global dataframe
         allSectorsInf = allSectorsInf.append(sectorsInf, ignore_index=True)
 
@@ -81,8 +80,40 @@ def loadSectorInf(historyWeeks = 8):
     sectorTop5counter = {k: v for k, v in sorted(sectorTop5counter.items(), key=lambda x: x[1], reverse=True)}
     return allSectorsInf, sectorTop5counter
     
+'''
+get information on what sectors are my holdings
+'''
+def loadHoldingsSectors():
+    fundsInfFiles = glob.glob("*_FundsInf.csv")
+    lastOne = fundsInfFiles[-1:][0]
+    print(f"Loading {lastOne} for creating the sector holding list.")
 
-def getPlotInformation(allSectorsInf, sectorTop5counter):
+    fundInf = pd.read_csv(lastOne, sep=',')
+
+    dtm = lambda x: datetime.strptime(x, "%d/%m/%y %H:%M")
+    fundInf["date"] = fundInf["date"].apply(dtm)
+
+    #  count how many holding funds are in each sector
+    holdingSectorsList = {}
+    for fund in fundInf.itertuples():
+        if fund.Hold:
+            if not fund.Sector in holdingSectorsList:
+                holdingSectorsList[fund.Sector] = 1
+            else:
+                holdingSectorsList[fund.Sector] += 1
+
+    print(json.dumps(holdingSectorsList, indent=2))
+    return holdingSectorsList
+
+
+def legendString(sectorName, suffix, holdingSectorsList):
+    colName = sectorName + suffix
+    colName = colName.replace(' ','_')
+    if sectorName in holdingSectorsList:
+        colName += f"({holdingSectorsList[sectorName]})"
+    return colName
+
+def getPlotInformation(allSectorsInf, sectorTop5counter, holdingSectorsList):
     ''' 
     collect passed information on top 5 
     '''
@@ -93,23 +124,65 @@ def getPlotInformation(allSectorsInf, sectorTop5counter):
     unfilled_markers = [m for m, func in iteritems(Line2D.markers)
                         if func != 'nothing' and m not in Line2D.filled_markers]
 
-
-    # leave just the ones that are at least half than the best count
-    # the list is sorted
-    for indx, name in enumerate(list(sectorTop5counter)):
-        if indx==0:
-            bestCount = int(sectorTop5counter[name]/2)
-            continue
-        if sectorTop5counter[name]<bestCount:
-            del sectorTop5counter[name]
-        
     # group by fundname (code)
     groupedFundsList = allSectorsInf.groupby('sectorName', as_index=False)
 
-    
-
+    # create pdf with multiple pages
     pdfFileName = dateStamp+'_SectorsPerformance_all.pdf'
-    with PdfPages(pdfFileName) as pdf:        
+    with PdfPages(pdfFileName) as pdf:
+        
+        
+        # create a unique list of sectors in the top 5 and holdings
+        sectorsToReport = set(list(holdingSectorsList)+list(sectorTop5counter))
+        
+        # based on the example in https://matplotlib.org/stable/tutorials/text/text_intro.html
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        # fig.subplots_adjust(top=0.85)
+        ax.set_title('Sector Name (number of holdings)       <in top 5 list>')
+
+        # Set both x- and y-axis limits to [0, 10] instead of default [0, 1]
+        ax.axis([0, 10, 0, 10])  
+        
+        dY = 9.0 / float(len(sectorsToReport))
+        Y = 9
+        for sector in sectorsToReport:
+                
+            holdingsCount = 0
+            if sector in holdingSectorsList:
+                holdingsCount = holdingSectorsList[sector]
+                
+            if sector in sectorTop5counter and holdingsCount>0:
+                ax.text(0.2, Y, f"{sector}:{holdingsCount}", 
+                        fontsize=10, fontweight='bold')
+            else:
+                ax.text(0.2, Y, f"{sector}:{holdingsCount}", 
+                        fontsize=10)
+    
+            Holding = '-'
+            if sector in sectorTop5counter:
+                Holding = f'{sectorTop5counter[sector]} weeks'
+            ax.text(8, Y, f"{Holding}", 
+                    fontsize=10, fontweight='bold')
+                
+            Y -= dY
+
+        pdf.savefig()  # saves the current figure into a pdf page
+        plt.show()
+        plt.close()
+
+
+        # leave just the ones that are at least half than the best count
+        # the list is sorted
+        if True:
+            for indx, name in enumerate(list(sectorTop5counter)):
+                if indx==0:
+                    bestCount = int(sectorTop5counter[name]/2)
+                    continue
+                if sectorTop5counter[name]<bestCount:
+                    del sectorTop5counter[name]
+
+        #         
         ax  = plt.gca()
         markerIndx = 0
         for sectorName, frame in groupedFundsList:
@@ -130,8 +203,11 @@ def getPlotInformation(allSectorsInf, sectorTop5counter):
             #print(sortedFunds.head())
             
             # sector order
-            colName = sectorName + "-O_1m"
-            colName = colName.replace(' ','_')
+            # colName = sectorName + "-O_1m"
+            # colName = colName.replace(' ','_')
+            # if sectorName in holdingSectorsList:
+            #     colName += f"({holdingSectorsList[sectorName]})"
+            colName = legendString(sectorName, "-O_1m", holdingSectorsList)           
             sortedFunds.rename(columns={"O_1m":colName}, inplace=True)
     
             sortedFunds.plot(kind='line', x='date',
@@ -140,7 +216,12 @@ def getPlotInformation(allSectorsInf, sectorTop5counter):
                 
         
         # https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.pyplot.legend.html
-        ax.legend(loc='best', fontsize='x-small', ncol=2)
+        # ax.legend(loc='best', fontsize='x-small', ncol=2)
+        # https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot/43439132#43439132
+        ax.legend(bbox_to_anchor=(-0.1,0.89,1.2,0.3), loc="lower left",
+                mode="expand", borderaxespad=0, ncol=2, fontsize='x-small')
+        
+        plt.xticks(fontsize=8) 
         plt.grid(True)
         # https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.savefig.html
     
@@ -153,7 +234,7 @@ def getPlotInformation(allSectorsInf, sectorTop5counter):
         plt.show()
         plt.close()
     
-    
+        #     
         ax  = plt.gca()
         markerIndx = 0
         for sectorName, frame in groupedFundsList:
@@ -175,16 +256,20 @@ def getPlotInformation(allSectorsInf, sectorTop5counter):
             
         
             # sector last month performance 
-            colName = sectorName + "-1m"
-            colName = colName.replace(' ','_')
-            sortedFunds.rename(columns={"1m":colName}, inplace=True)
+            # colName = sectorName + "-1m"
+            # colName = colName.replace(' ','_')
+            # sortedFunds.rename(columns={"1m":colName}, inplace=True)
     
+            colName = legendString(sectorName, "-1m", holdingSectorsList) 
+            sortedFunds.rename(columns={"1m":colName}, inplace=True)
             sortedFunds.plot(kind='line', x='date',
                              marker=unfilled_markers[markerIndx],
                              y=colName, ax=ax)        
     
-    
-        ax.legend(loc='best', fontsize='x-small', ncol=2)
+        # ax.legend(loc='best', fontsize='x-small', ncol=2)
+        ax.legend(bbox_to_anchor=(-0.1,0.89,1.2,0.3), loc="lower left",
+                mode="expand", borderaxespad=0, ncol=2, fontsize='x-small')
+        plt.xticks(fontsize=8) 
         plt.grid(True)
         # plt.savefig(dateStamp+'_SectorsPerformance.pdf')  
         # plt.savefig(pdfFileName)  
@@ -204,6 +289,8 @@ def getPlotInformation(allSectorsInf, sectorTop5counter):
 
 if __name__ == "__main__":
 
+    holdingSectorsList = loadHoldingsSectors()
+        
     allSectorsInf, sectorTop5counter = loadSectorInf(historyWeeks = 8)
     print(json.dumps(sectorTop5counter, indent=2))
     
@@ -212,5 +299,5 @@ if __name__ == "__main__":
         sys.exit(0)
         
         
-    getPlotInformation(allSectorsInf, sectorTop5counter)
+    getPlotInformation(allSectorsInf, sectorTop5counter, holdingSectorsList)
     

@@ -49,11 +49,13 @@ if __name__ == "__main__":
     #print(allFundsInf.shape)
     print(allFundsInf.columns)
 
-    # update holdingsList
+    # update holdingsList based on the last in the list 
+    # (should be the latest one)
     print(f"# gathering holding information from {file}")
     holdingsList = {}
     for fund in fundInf.itertuples():
         if fund.Hold:
+            # will set to true when the fund is analyzed
             holdingsList[fund.fundName] = False
               
     print("-------- loaded completed ----------------")
