@@ -118,11 +118,20 @@ def getPlotInformation(allSectorsInf, sectorTop5counter, holdingSectorsList):
     collect passed information on top 5 
     '''
 
+    # https://matplotlib.org/stable/gallery/lines_bars_and_markers/marker_reference.html
     # Filter out filled markers and marker settings that do nothing.
     # We use iteritems from six to make sure that we get an iterator
     # in both python 2 and 3
-    unfilled_markers = [m for m, func in iteritems(Line2D.markers)
-                        if func != 'nothing' and m not in Line2D.filled_markers]
+    # unfilled_markers = [m for m, func in iteritems(Line2D.markers)
+    #                     if func != 'nothing' and m not in Line2D.filled_markers]
+    
+    filled_markers = [m for m, func in iteritems(Line2D.markers)
+                        if func != 'nothing' and m in Line2D.filled_markers]
+    
+    markers = filled_markers
+    
+    line_types = ['-','--','-.',':']
+    
 
     # group by fundname (code)
     groupedFundsList = allSectorsInf.groupby('sectorName', as_index=False)
@@ -146,8 +155,11 @@ def getPlotInformation(allSectorsInf, sectorTop5counter, holdingSectorsList):
         
         dY = 9.0 / float(len(sectorsToReport))
         Y = 9
-        for sector in sectorsToReport:
+        for indx, sector in enumerate(sectorsToReport):
                 
+            markerIndx = indx % len(markers)
+            lineStyle  = indx % len(line_types)
+    
             holdingsCount = 0
             if sector in holdingSectorsList:
                 holdingsCount = holdingSectorsList[sector]
@@ -165,12 +177,14 @@ def getPlotInformation(allSectorsInf, sectorTop5counter, holdingSectorsList):
             ax.text(8, Y, f"{Holding}", 
                     fontsize=10, fontweight='bold')
                 
+            ax.plot([7.2, 7.8],[Y,Y],                     
+                    markers[markerIndx]+line_types[lineStyle])
+                    # style=line_types[lineStyle] )
             Y -= dY
 
         pdf.savefig()  # saves the current figure into a pdf page
         plt.show()
         plt.close()
-
 
         # leave just the ones that are at least half than the best count
         # the list is sorted
@@ -182,17 +196,21 @@ def getPlotInformation(allSectorsInf, sectorTop5counter, holdingSectorsList):
                 if sectorTop5counter[name]<bestCount:
                     del sectorTop5counter[name]
 
-        #         
+        # ------------------------
         ax  = plt.gca()
         markerIndx = 0
+        lineStyle = 0
         for sectorName, frame in groupedFundsList:
         
             if not sectorName in sectorTop5counter:
                 continue
             
-            # set marker
+            # set marker and line style
             markerIndx += 1
-            markerIndx %= len(unfilled_markers)
+            markerIndx %= len(markers)
+            
+            lineStyle += 1
+            lineStyle %= len(line_types)
     
             print(f"# processing {sectorName}")
             sortedFunds = frame.drop_duplicates(subset ="date", keep = False)
@@ -200,43 +218,38 @@ def getPlotInformation(allSectorsInf, sectorTop5counter, holdingSectorsList):
             # date  column becomes index column
             sortedFunds.set_index('date', drop=False, append=False, inplace=True, verify_integrity=False)
             sortedFunds.sort_index()
-            #print(sortedFunds.head())
             
             # sector order
-            # colName = sectorName + "-O_1m"
-            # colName = colName.replace(' ','_')
-            # if sectorName in holdingSectorsList:
-            #     colName += f"({holdingSectorsList[sectorName]})"
             colName = legendString(sectorName, "-O_1m", holdingSectorsList)           
             sortedFunds.rename(columns={"O_1m":colName}, inplace=True)
     
             sortedFunds.plot(kind='line', x='date',
-                             marker=unfilled_markers[markerIndx],
+                             marker=markers[markerIndx],
+                             style=line_types[lineStyle],
                              y=colName, ax=ax)        
                 
-        
         # https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.pyplot.legend.html
         # ax.legend(loc='best', fontsize='x-small', ncol=2)
         # https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot/43439132#43439132
         ax.legend(bbox_to_anchor=(-0.1,0.89,1.2,0.3), loc="lower left",
                 mode="expand", borderaxespad=0, ncol=2, fontsize='x-small')
         
+        ax.set_ylabel("1m Order")
         plt.xticks(fontsize=8) 
         plt.grid(True)
         # https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.savefig.html
     
-        # pdfFileName = dateStamp+'_SectorsPerformance_all.pdf'
-        # plt.savefig(pdfFileName)  
-        # plt.savefig(dateStamp+'_SectorsPosition.pdf')  
         pdf.savefig()  # saves the current figure into a pdf page
     
         # https://stackoverflow.com/questions/51203839/python-saving-empty-plot/51203929
         plt.show()
         plt.close()
     
-        #     
+        # ------------------------
+        #  1month performance   
         ax  = plt.gca()
         markerIndx = 0
+        lineStyle = 0
         for sectorName, frame in groupedFundsList:
         
             if not sectorName in sectorTop5counter:
@@ -244,7 +257,9 @@ def getPlotInformation(allSectorsInf, sectorTop5counter, holdingSectorsList):
             
             # set marker
             markerIndx += 1
-            markerIndx %= len(unfilled_markers)
+            markerIndx %= len(markers)
+            lineStyle += 1
+            lineStyle %= len(line_types)
     
             print(f"# processing {sectorName}")
             sortedFunds = frame.drop_duplicates(subset ="date", keep = False)
@@ -252,31 +267,69 @@ def getPlotInformation(allSectorsInf, sectorTop5counter, holdingSectorsList):
             # date  column becomes index column
             sortedFunds.set_index('date', drop=False, append=False, inplace=True, verify_integrity=False)
             sortedFunds.sort_index()
-            #print(sortedFunds.head())
-            
-        
-            # sector last month performance 
-            # colName = sectorName + "-1m"
-            # colName = colName.replace(' ','_')
-            # sortedFunds.rename(columns={"1m":colName}, inplace=True)
     
             colName = legendString(sectorName, "-1m", holdingSectorsList) 
             sortedFunds.rename(columns={"1m":colName}, inplace=True)
             sortedFunds.plot(kind='line', x='date',
-                             marker=unfilled_markers[markerIndx],
+                             marker=markers[markerIndx],
+                             style=line_types[lineStyle],
                              y=colName, ax=ax)        
     
         # ax.legend(loc='best', fontsize='x-small', ncol=2)
         ax.legend(bbox_to_anchor=(-0.1,0.89,1.2,0.3), loc="lower left",
                 mode="expand", borderaxespad=0, ncol=2, fontsize='x-small')
+        ax.set_ylabel("1m Performance")
         plt.xticks(fontsize=8) 
         plt.grid(True)
-        # plt.savefig(dateStamp+'_SectorsPerformance.pdf')  
-        # plt.savefig(pdfFileName)  
+
         pdf.savefig()  # saves the current figure into a pdf page
         plt.show()
         plt.close()
 
+        # ------------------------
+        #  3month performance   
+        ax  = plt.gca()
+        markerIndx = 0
+        lineStyle = 0
+        for sectorName, frame in groupedFundsList:
+        
+            if not sectorName in sectorTop5counter:
+                continue
+            
+            # set marker
+            markerIndx += 1
+            markerIndx %= len(markers)
+            lineStyle += 1
+            lineStyle %= len(line_types)
+    
+            print(f"# processing {sectorName}")
+            sortedFunds = frame.drop_duplicates(subset ="date", keep = False)
+            
+            # date  column becomes index column
+            sortedFunds.set_index('date', drop=False, append=False, inplace=True, verify_integrity=False)
+            sortedFunds.sort_index()
+    
+            colName = legendString(sectorName, "-3m", holdingSectorsList) 
+            sortedFunds.rename(columns={"3m":colName}, inplace=True)
+            sortedFunds.plot(kind='line', x='date',
+                             marker=markers[markerIndx],
+                             style=line_types[lineStyle],
+                             y=colName, ax=ax)        
+    
+        # ax.legend(loc='best', fontsize='x-small', ncol=2)
+        ax.legend(bbox_to_anchor=(-0.1,0.89,1.2,0.3), loc="lower left",
+                mode="expand", borderaxespad=0, ncol=2, fontsize='x-small')
+        ax.set_ylabel("3m Performance")
+        plt.xticks(fontsize=8) 
+        plt.grid(True)
+
+        pdf.savefig()  # saves the current figure into a pdf page
+        plt.show()
+        plt.close()
+
+
+        # ========================== 
+        # Finalize PDF
         # We can also set the file's metadata via the PdfPages object:
         d = pdf.infodict()
         d['Title'] = 'Multipage PDF Example'
