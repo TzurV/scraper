@@ -148,7 +148,8 @@ def getPlotInformation(allSectorsInf, sectorTop5counter, holdingSectorsList):
         fig = plt.figure()
         ax = fig.add_subplot(111)
         # fig.subplots_adjust(top=0.85)
-        ax.set_title('Sector Name (number of holdings)       <in top 5 list>')
+        ax.set_title('Sector Name (number of holdings)      <weeks_in top 5> <3m> <1m>',
+                     fontsize=10)
 
         # Set both x- and y-axis limits to [0, 10] instead of default [0, 1]
         ax.axis([0, 10, 0, 10])  
@@ -166,19 +167,28 @@ def getPlotInformation(allSectorsInf, sectorTop5counter, holdingSectorsList):
                 holdingsCount = holdingSectorsList[sector]
                 
             if sector in sectorTop5counter and holdingsCount>0:
-                ax.text(0.2, Y, f"{sector}:{holdingsCount}", 
+                ax.text(0.1, Y, f"{sector}:{holdingsCount}", 
                         fontsize=10, fontweight='bold')
             else:
-                ax.text(0.2, Y, f"{sector}:{holdingsCount}", 
+                ax.text(0.1, Y, f"{sector}:{holdingsCount}", 
                         fontsize=10)
     
             Holding = '-'
             if sector in sectorTop5counter:
-                Holding = f'{sectorTop5counter[sector]} weeks'
-            ax.text(8, Y, f"{Holding}", 
+                Holding = f'{sectorTop5counter[sector]}w'
+            ax.text(7.7, Y, f"{Holding}", 
                     fontsize=10, fontweight='bold')
                 
-            ax.plot([7.2, 7.8],[Y,Y],                     
+            if indx == 0:
+                print(f"Data taken from file dated {groupedFundsList.get_group(sector)[-1:]['date'].iloc[0]}")
+                
+            performance1m=groupedFundsList.get_group(sector)[-1:]['1m'].iloc[0]
+            performance3m=groupedFundsList.get_group(sector)[-1:]['3m'].iloc[0]
+            ax.text(8.5, Y, f"{performance3m:>4}  {performance1m:>4}", 
+                    fontsize=10, fontweight='bold')
+            
+            # Plot short example line
+            ax.plot([7.0, 7.5],[Y,Y],                     
                     markers[markerIndx]+line_types[lineStyle],
                     color=None)
                     
