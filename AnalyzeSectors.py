@@ -155,6 +155,7 @@ def getPlotInformation(allSectorsInf, sectorTop5counter, holdingSectorsList):
         
         dY = 9.0 / float(len(sectorsToReport))
         Y = 9
+        sectorPlotType = {}
         for indx, sector in enumerate(sectorsToReport):
                 
             markerIndx = indx % len(markers)
@@ -178,9 +179,15 @@ def getPlotInformation(allSectorsInf, sectorTop5counter, holdingSectorsList):
                     fontsize=10, fontweight='bold')
                 
             ax.plot([7.2, 7.8],[Y,Y],                     
-                    markers[markerIndx]+line_types[lineStyle])
-                    # style=line_types[lineStyle] )
+                    markers[markerIndx]+line_types[lineStyle],
+                    color=None)
+                    
             Y -= dY
+            
+            # store linetype and marker used per sector
+            sectorPlotType[sector] = {"line":line_types[lineStyle],
+                                      "marker":markers[markerIndx],
+                                      "color": plt.gca().lines[-1].get_color()}
 
         pdf.savefig()  # saves the current figure into a pdf page
         plt.show()
@@ -198,20 +205,11 @@ def getPlotInformation(allSectorsInf, sectorTop5counter, holdingSectorsList):
 
         # ------------------------
         ax  = plt.gca()
-        markerIndx = 0
-        lineStyle = 0
         for sectorName, frame in groupedFundsList:
         
             if not sectorName in sectorTop5counter:
                 continue
-            
-            # set marker and line style
-            markerIndx += 1
-            markerIndx %= len(markers)
-            
-            lineStyle += 1
-            lineStyle %= len(line_types)
-    
+                
             print(f"# processing {sectorName}")
             sortedFunds = frame.drop_duplicates(subset ="date", keep = False)
             
@@ -224,8 +222,9 @@ def getPlotInformation(allSectorsInf, sectorTop5counter, holdingSectorsList):
             sortedFunds.rename(columns={"O_1m":colName}, inplace=True)
     
             sortedFunds.plot(kind='line', x='date',
-                             marker=markers[markerIndx],
-                             style=line_types[lineStyle],
+                             marker=sectorPlotType[sectorName]["marker"],
+                             style=sectorPlotType[sectorName]["line"],
+                             color=sectorPlotType[sectorName]["color"],
                              y=colName, ax=ax)        
                 
         # https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.pyplot.legend.html
@@ -248,19 +247,11 @@ def getPlotInformation(allSectorsInf, sectorTop5counter, holdingSectorsList):
         # ------------------------
         #  1month performance   
         ax  = plt.gca()
-        markerIndx = 0
-        lineStyle = 0
         for sectorName, frame in groupedFundsList:
         
             if not sectorName in sectorTop5counter:
                 continue
-            
-            # set marker
-            markerIndx += 1
-            markerIndx %= len(markers)
-            lineStyle += 1
-            lineStyle %= len(line_types)
-    
+                
             print(f"# processing {sectorName}")
             sortedFunds = frame.drop_duplicates(subset ="date", keep = False)
             
@@ -271,8 +262,8 @@ def getPlotInformation(allSectorsInf, sectorTop5counter, holdingSectorsList):
             colName = legendString(sectorName, "-1m", holdingSectorsList) 
             sortedFunds.rename(columns={"1m":colName}, inplace=True)
             sortedFunds.plot(kind='line', x='date',
-                             marker=markers[markerIndx],
-                             style=line_types[lineStyle],
+                             marker=sectorPlotType[sectorName]["marker"],
+                             style=sectorPlotType[sectorName]["line"],
                              y=colName, ax=ax)        
     
         # ax.legend(loc='best', fontsize='x-small', ncol=2)
@@ -289,19 +280,11 @@ def getPlotInformation(allSectorsInf, sectorTop5counter, holdingSectorsList):
         # ------------------------
         #  3month performance   
         ax  = plt.gca()
-        markerIndx = 0
-        lineStyle = 0
         for sectorName, frame in groupedFundsList:
         
             if not sectorName in sectorTop5counter:
                 continue
-            
-            # set marker
-            markerIndx += 1
-            markerIndx %= len(markers)
-            lineStyle += 1
-            lineStyle %= len(line_types)
-    
+
             print(f"# processing {sectorName}")
             sortedFunds = frame.drop_duplicates(subset ="date", keep = False)
             
@@ -312,8 +295,8 @@ def getPlotInformation(allSectorsInf, sectorTop5counter, holdingSectorsList):
             colName = legendString(sectorName, "-3m", holdingSectorsList) 
             sortedFunds.rename(columns={"3m":colName}, inplace=True)
             sortedFunds.plot(kind='line', x='date',
-                             marker=markers[markerIndx],
-                             style=line_types[lineStyle],
+                             marker=sectorPlotType[sectorName]["marker"],
+                             style=sectorPlotType[sectorName]["line"],
                              y=colName, ax=ax)        
     
         # ax.legend(loc='best', fontsize='x-small', ncol=2)
