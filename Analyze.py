@@ -40,20 +40,31 @@ if __name__ == "__main__":
         dtm = lambda x: datetime.strptime(x, "%d/%m/%y %H:%M")
         fundInf["date"] = fundInf["date"].apply(dtm)
 
+        # get unique fund code
+        fundCode = lambda P: P.split('/')[-2]
+        fundInf["fundCode"] = fundInf["url"].apply(fundCode)
+
+
         allFundsInf = allFundsInf.append(fundInf, ignore_index=True)
         #print(fundInf.head())
         #print(fundInf.shape)
         #print(fundInf.columns)
 
     print(f"# Total '*_FundsInf.csv' files loaded {loadedFile}")
-    #print(allFundsInf.shape)
+
+    # get unique fund code
+    # fundCode = lambda P: P.split('/')[-2]
+    # allFundsInf["fundCode"] = allFundsInf["url"].apply(fundCode)
+
     print(allFundsInf.columns)
 
     # update holdingsList based on the last in the list 
     # (should be the latest one)
     print(f"# gathering holding information from {file}")
     holdingsList = {}
+    activeMonitoredList = []
     for fund in fundInf.itertuples():
+        activeMonitoredList.append(fund.fundCode)
         if fund.Hold:
             # will set to true when the fund is analyzed
             holdingsList[fund.fundName] = False
@@ -79,15 +90,7 @@ if __name__ == "__main__":
         sectorsInf = sectorsInf.drop(sectorsInf[sectorsInf['1m'] == '-'].index)
         for col in sectorSelectedColumns:
             sectorsInf[col] = sectorsInf[col].astype(float)        
-        
-        # development code 
-        #dbgPrint(sectorsInf.to_string())
-        #dbgPrint(sectorsInf.loc[sectorsInf['sectorName'] == 'IA Flexible Investment'].index)
-        #dbgPrint(sectorsInf.loc[ (sectorsInf['date'] == pd.to_datetime('2020-08-20 15:53:00', format='%Y-%m-%d %H:%M:%S', errors='ignore')) &\
-        #                        (sectorsInf['sectorName'] == 'IA Flexible Investment') ])
-        #dbgPrint(sectorsInf.loc[ (sectorsInf['date'].dt.date == pd.to_datetime('2020-08-20', format='%Y-%m-%d', errors='ignore')) &\
-        #                        (sectorsInf['sectorName'] == 'IA Flexible Investment') ])
-        
+                
         allSectorsInf = allSectorsInf.append(sectorsInf, ignore_index=True)
 
     print("-------- ALL ----------------")
@@ -95,13 +98,7 @@ if __name__ == "__main__":
     print(f"Latest file is {file}")
     print(allSectorsInf.shape)
     print(allSectorsInf.columns)
-    #sys.exit(0)
     
-    
-    # get unique fund code
-    fundCode = lambda P: P.split('/')[-2]
-    allFundsInf["fundCode"] = allFundsInf["url"].apply(fundCode)
-
 
     #=============================
     #                      3 first rows and 5 columns
@@ -142,12 +139,11 @@ if __name__ == "__main__":
     #print(groupedFundsList)
     for fundCode, frame in groupedFundsList:
 
+        # skip funds not on the current excel list
+        if not fundCode in activeMonitoredList:
+            continue
 
-        #print(frame.sort_values(by="date"))
         sortedFunds = frame.drop_duplicates(subset ="date", keep = False)
-        #sortedFunds = frame1.sort_values(by="date", ascending=True)
-        
-        #sortedFunds.drop_duplicates(subset ="date", keep = False, inplace = True)
 
         # date  column becomes index column
         sortedFunds.set_index('date', drop=False, append=False, inplace=True, verify_integrity=False)
@@ -167,10 +163,10 @@ if __name__ == "__main__":
 
         Holding = (fund in holdingsList)
         print(f"\n-=> Fund {fund} , holding {Holding} <=-")
-        print(f"\t\tCode:{fundCode}")
+        print(f"\t\tCode:{fundCode}\tSector: {fundSector}")
         if Holding:
             holdingsList[fund] = True
-        print(sortedFunds[['Quartile', 'FERisk', '3m', '6m', '1y', '3y', '5y' ]])
+        print(sortedFunds[['Quartile', 'FERisk', '3m', '6m', '1y', '3y', '5y', 'Hold' ]])
 
         worse3MthanSector = False
         fundSectorPerformanceOnDate = allSectorsInf.loc[ (allSectorsInf['date'].dt.date == \
@@ -205,9 +201,7 @@ if __name__ == "__main__":
                                           'Holding':Holding ,
                                           'worsenQuartile':worsenQuartile, 
                                           'worsenFERisk':worsenFERisk,
-                                          'worse3mThanSector':worse3MthanSector}, ignore_index=True)
-        #sys.exit(0)
-            
+                                          'worse3mThanSector':worse3MthanSector}, ignore_index=True)            
 
     print("----------- Check if all holdings are monitored --------")
     pprint.pprint(holdingsList)
