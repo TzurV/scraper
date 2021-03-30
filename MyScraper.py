@@ -68,8 +68,8 @@ class MyHoldingsExcell:
 
     def getTrackingListURLs(self):
         TrackingList_sheet = self.workbook["TrackingList"]
-        trackingURLsColumn = TrackingList_sheet["E:E"]
-        holdingColumn = TrackingList_sheet["F:F"]
+        trackingURLsColumn = TrackingList_sheet["F:F"]
+        holdingColumn = TrackingList_sheet["G:G"]
         
         trackingURLsList = []
         totHoldings = 0
@@ -391,8 +391,7 @@ if __name__ == "__main__":
 
     # get url list from trcking urls from excel
     myHoldingsExcell = MyHoldingsExcell()
-    trackingURLsList = myHoldingsExcell.getTrackingListURLs()
-
+    trackingURLsList = myHoldingsExcell.getTrackingListURLs()    
 
     #============
     # start chrom
@@ -473,6 +472,7 @@ if __name__ == "__main__":
         totURLs += 1 
         url = url.rstrip("\n")
         print(url) 
+        
         reTries = 1
         while reTries<3:
             Status, fundInf = ChromeInstance.getFundInf_v2(url)
