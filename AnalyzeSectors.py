@@ -143,6 +143,19 @@ def getPlotInformation(allSectorsInf, sectorTop5counter, holdingSectorsList):
         
         # create a unique list of sectors in the top 5 and holdings
         sectorsToReport = set(list(holdingSectorsList)+list(sectorTop5counter))
+
+        secPerformance = dict()
+        # sort sectors by performance
+        for sector in sectorsToReport:
+            secPerformance[sector] = groupedFundsList.get_group(sector)[-1:]['1m'].iloc[0]
+            
+        sortedSecPerformance = sorted(secPerformance.items(), key=lambda x:x[1], reverse=True)
+        #print(sortedSecPerformance)
+        sectorsToReport = list()
+        for sector in sortedSecPerformance:
+            sectorsToReport.append(sector[0])
+        #print(sectorsToReport)
+        #return
         
         # based on the example in https://matplotlib.org/stable/tutorials/text/text_intro.html
         fig = plt.figure()

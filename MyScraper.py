@@ -19,7 +19,7 @@ from datetime import datetime
 import re
 
 
-#import sys
+import sys
 import time
 
 #============================================
@@ -68,7 +68,7 @@ class MyHoldingsExcell:
 
     def getTrackingListURLs(self):
         TrackingList_sheet = self.workbook["TrackingList"]
-        trackingURLsColumn = TrackingList_sheet["F:F"]
+        trackingURLsColumn = TrackingList_sheet["F:F"]        
         holdingColumn = TrackingList_sheet["G:G"]
         
         trackingURLsList = []
@@ -84,6 +84,7 @@ class MyHoldingsExcell:
            #print(f"{haveIt} {trackingURLsColumn[indx].value}")
         
         print(f"# URLs summary: {len(trackingURLsList)} loaded and listed holding {totHoldings}")
+        print(trackingURLsList[-5:-1])
         return trackingURLsList
     
 
@@ -94,7 +95,7 @@ class MyHoldingsExcell:
 # https://chercher.tech/python/table-selenium-python
 
 # globals
-column_names = ["date", "fundName", "Quartile", "FERisk", "3m", "6m", "1y", "3y", "5y", "Hold"]
+column_names = ["date", "fundName", "Quartile", "FERisk", "3m", "6m", "1y", "3y", "5y", "url", "Hold"]
 Empty_fund_df = pd.DataFrame(columns = column_names)
 
 
@@ -466,6 +467,7 @@ if __name__ == "__main__":
     # loop over a list in a file
     totURLs = 0
     totSuccessful = 0
+    failedURLs = list()
     for URLinf in trackingURLsList:
         url = URLinf['URL']
         
@@ -474,7 +476,8 @@ if __name__ == "__main__":
         print(url) 
         
         reTries = 1
-        while reTries<3:
+        maxNtime = 3
+        while reTries<maxNtime:
             Status, fundInf = ChromeInstance.getFundInf_v2(url)
             reTries += 1
             
@@ -487,19 +490,33 @@ if __name__ == "__main__":
                 allFundsInf = allFundsInf.append(fundInf, ignore_index=True)
                 print(allFundsInf)
                 reTries=100
+                
+                if url in failedURLs:
+                    del failedURLs[url]
+                
+            elif reTries==maxNtime:
+                if not url in failedURLs:
+                    failedURLs.append(url)
+                    trackingURLsList.append(URLinf)
+                    
             else:
                 print(f"# Trying again {reTries} to fetch data ")
                 
     # save all funds  information 
     ## https://chrisalbon.com/python/data_wrangling/pandas_dataframe_importing_csv/
     fileName = "C:\\Users\\tzurv\\python\\VScode\\scraper\\" + dateStamp + "_FundsInf.csv"
-    print(f"Savinf information to {fileName}")
-    allFundsInf.to_csv(fileName, sep=',', float_format='%.2f')
+    try:
+        print(f"Saving information to {fileName}")    
+        allFundsInf.to_csv(fileName, sep=',', float_format='%.2f')
+    except:
+        print(f"Tryin AGain to Save information to {fileName}")    
+        allFundsInf.to_csv(fileName+".II", sep=',', float_format='%.2f')
 
     if not totURLs == totSuccessful:
         print('#'*50)
         print(f"# Not all data collected. File includes {totSuccessful} out of {totURLs} urls in the list #")
         print('#'*50)
+        print(failedURLs)
 
 
 
