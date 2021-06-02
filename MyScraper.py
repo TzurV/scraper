@@ -380,7 +380,7 @@ if __name__ == "__main__":
     #----------------------
     # Get current time date  
     #https://docs.python.org/3/library/datetime.html
-    now = datetime.now()
+    now = datetime.today()
 
     current_time = now.strftime("%d/%m/%y %H:%M")
     print("Current Time =", current_time)
@@ -473,11 +473,12 @@ if __name__ == "__main__":
         
         totURLs += 1 
         url = url.rstrip("\n")
-        print(url) 
+        print(f"# fetching: {url}") 
         
         reTries = 1
         maxNtime = 3
         while reTries<maxNtime:
+            #print(f"# fetching: {url}")
             Status, fundInf = ChromeInstance.getFundInf_v2(url)
             reTries += 1
             
@@ -492,7 +493,7 @@ if __name__ == "__main__":
                 reTries=100
                 
                 if url in failedURLs:
-                    del failedURLs[url]
+                    failedURLs.remove(url)
                 
             elif reTries==maxNtime:
                 if not url in failedURLs:
