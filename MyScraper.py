@@ -246,6 +246,7 @@ class trustnetInf:
 
         # open web page and return
         if openAndReturn:
+            time.sleep(60)
             return _statusOK, self.driver
     
         print("Check point 1 ! ")
@@ -408,6 +409,7 @@ if __name__ == "__main__":
             print("Get Sectors data.")
 
             try:
+                
                 _notFoundTable = True
                 chrom_driver.implicitly_wait(1)
                 _AllTableElement = chrom_driver.find_elements_by_class_name("data_table")
@@ -451,6 +453,7 @@ if __name__ == "__main__":
                 print(ex) 
                 _statusOK = False
        
+    #sys.exit(0)
     
     # for backwards compatibility, create list from the file
     if False:
