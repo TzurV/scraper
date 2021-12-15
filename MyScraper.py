@@ -61,7 +61,7 @@ from openpyxl import load_workbook
 class MyHoldingsExcell:
     def __init__(self):
         
-        self.AllHoldingsFile = "E:/Family/צור/bank/Fidelity/AllHoldings_Updated.xlsx"
+        self.AllHoldingsFile = r"E:\Family\צור\bank and money\Fidelity\AllHoldings_Updated.xlsx"
         print(f"# getting iformation from {self.AllHoldingsFile}.")
         self.workbook = load_workbook(filename=self.AllHoldingsFile, data_only=True)
         pass
