@@ -28,8 +28,12 @@ if __name__ == "__main__":
     # create empty dataframe
     allFundsInf = pd.DataFrame()
     loadedFile = 0
+    last_file = None
+    last_fundInf = None
+    print(f"current working directory {os. getcwd()}")
     for file in glob.glob("*_FundsInf.csv"):
         # print(f"Loading {file}" )
+        last_file = file
         loadedFile +=1
 
         # loading examples
@@ -43,7 +47,7 @@ if __name__ == "__main__":
         # get unique fund code
         fundCode = lambda P: P.split('/')[-2]
         fundInf["fundCode"] = fundInf["url"].apply(fundCode)
-
+        last_fundInf = fundInf
 
         allFundsInf = allFundsInf.append(fundInf, ignore_index=True)
         #print(fundInf.head())
@@ -60,10 +64,10 @@ if __name__ == "__main__":
 
     # update holdingsList based on the last in the list 
     # (should be the latest one)
-    print(f"# gathering holding information from {file}")
+    print(f"# gathering holding information from {last_file}")
     holdingsList = {}
     activeMonitoredList = []
-    for fund in fundInf.itertuples():
+    for fund in last_fundInf.itertuples():
         activeMonitoredList.append(fund.fundCode)
         if fund.Hold:
             # will set to true when the fund is analyzed
@@ -77,6 +81,7 @@ if __name__ == "__main__":
     sectorSelectedColumns = ['1m', '3m', '6m', '1y', '3y', '5y']
     allSectorsInf = pd.DataFrame()
     totalSectorsInfFiles = 0
+    last_sectorsInf = None
     for file in glob.glob("*_TrustNetSectors.csv"):
         #print(f"Loading {file}" )
         totalSectorsInfFiles += 1
@@ -89,15 +94,16 @@ if __name__ == "__main__":
         #like  '21,20/09/20 09:52,IA Not yet assigned,-,-,-,-,-,-'
         sectorsInf = sectorsInf.drop(sectorsInf[sectorsInf['1m'] == '-'].index)
         for col in sectorSelectedColumns:
-            sectorsInf[col] = sectorsInf[col].astype(float)        
+            sectorsInf[col] = sectorsInf[col].astype(float) 
+        last_sectorsInf = sectorsInf
                 
         allSectorsInf = allSectorsInf.append(sectorsInf, ignore_index=True)
 
     print("-------- ALL ----------------")
     print(f"# Total '*_TrustNetSectors.csv' files loaded {totalSectorsInfFiles}")
-    print(f"Latest file is {file}")
-    print(allSectorsInf.shape)
-    print(allSectorsInf.columns)
+    print(f"Latest file is {last_file}")
+    print(f"cout funds per sector over the whole data collection period {allSectorsInf.shape}")
+    # print(allSectorsInf.columns)
     
 
     #=============================
@@ -114,18 +120,50 @@ if __name__ == "__main__":
     #fundsList = allFundsInf.groupby('fundName')
     #print(type(fundsList))
 
+    #print(f"\n{'*'*50}")    
     # ===========================
     # https://www.shanelynn.ie/summarising-aggregation-and-grouping-data-in-python-pandas/
-    print(allFundsInf.groupby('Sector').Sector.count())
-    print(allFundsInf.groupby(['fundName', 'date'])['date'].count())
+    #print(allFundsInf.groupby('Sector').Sector.count())
+    # print for each fund what dates data was collected
+    #print(allFundsInf.groupby(['fundName', 'date'])['date'].count())
+
+    print(f"\n{'-'*50}")  
+    print('Current Number of funds per sector in the tracking list:')
+    #print(last_fundInf.groupby(['Sector'])['Sector'].count())
     #AllSectors = allFundsInf.groupby('Sector')
+
+    #print("\n# Sectors not represented in the funds tracking list. !")
+    #represented_sectors = [a[0] for a in last_fundInf.groupby(['Sector'])]
+    #for sector in list(last_sectorsInf['sectorName']):
+    #    if sector not in represented_sectors:
+    #        print(f"{sector}")
+        
+    sectors_summary = dict()
+    for sector in list(last_sectorsInf['sectorName']):
+        sectors_summary[sector]= {'count':'None', 'Weekly':'N/A'}        
+    for a in last_fundInf.groupby(['Sector'])['Sector']:
+        if a[0] not in sectors_summary:
+            sectors_summary[a[0]]= {'count':'None', 'Weekly':'N/A'}              
+        sectors_summary[a[0]]['count'] = len(a[1])
+    for a in allFundsInf.groupby('Sector'):
+        if a[0] not in sectors_summary:
+            sectors_summary[a[0]]= {'count':'None', 'Weekly':'N/A'}            
+        sectors_summary[a[0]]['Weekly'] = len(a[1])
+    
+    print(f"{'sector':<40}: {'funds':>4} {'Cases':>6} {sectorSelectedColumns}")
+    for sector in sectors_summary:
+        indx = last_sectorsInf.index[last_sectorsInf['sectorName']==sector]
+        if len(indx)>0:
+            print(f"{sector:<40}: {sectors_summary[sector]['count']:>4} {sectors_summary[sector]['Weekly']:>6} [{last_sectorsInf.loc[indx, sectorSelectedColumns].to_string(index=False, header=False, col_space=7)}]")
+        else:
+            print(f"{sector:<40}: {sectors_summary[sector]['count']:>4} {sectors_summary[sector]['Weekly']:>6}")
 
     #https://realpython.com/pandas-groupby/
     #groupedFundsList = allFundsInf.groupby(['Sector','fundName', 'date'], as_index=False)
     #print(groupedFundsList)
     #for (sector, fund, date, frame) in groupedFundsList:
     #    print(sector, fund, date)
-
+    
     # create report
     COLUMN_NAMES=['fundName', 'Holding', 'worsenQuartile', 'worsenFERisk', 'worse3mThanSector']
     pdSummary = pd.DataFrame(columns=COLUMN_NAMES)
