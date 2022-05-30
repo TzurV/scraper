@@ -11,6 +11,9 @@
 # https://selenium-python.readthedocs.io/api.html#module-selenium.webdriver.remote.webdriver
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 
 #import chromedriver_binary # Adds chromedriver binary to path
 
@@ -227,10 +230,21 @@ class trustnetInf:
             #<button tabindex="0" type="button" mode="primary" class="sc-bwzfXH bbIVrv">ACCEPT ALL</button>
             #XPATH: "/html/body/div[1]/div/div/div/div[2]/div/button[2]"
             #https://selenium-python.readthedocs.io/getting-started.html Section:  2.2. Example Explained
+            
             #  click 'Accept ALL'
             elem = self.driver.find_element_by_xpath(u'/html/body/div[1]/div/div/div/div[2]/div/button[2]')
             elem.click()
+
+            #element = WebDriverWait(self.driver, 5).until(EC.element_to_be_clickable((By.XPATH, u"/html/body/div[1]/div/div/div/div[1]/div/div[2]/button[2]")))
+            #element.click()
+            #print("TZUR AABC")
+            # Click 'SAVE AND EXIT'
+            #elem = self.driver.find_element_by_xpath(u"/html/body/div[1]/div/div/div/div[3]/div[1]/button[2]")
+            #elem.click()
             
+            elem = self.driver.find_element_by_xpath(u"/html/body/div[1]/div/div/div/div[3]/div[2]/button")
+            elem.click()
+
             #Select 'I am a private investor'
             elem = self.driver.find_element_by_xpath("/html/body/user-type-popup/div[1]/div[3]/div/div[1]/p[5]/label/span")
             elem.click()
@@ -238,9 +252,11 @@ class trustnetInf:
             # Click 'I agree'
             elem = self.driver.find_element_by_xpath("/html/body/user-type-popup/div[1]/div[3]/div/div[2]/p[3]")
             elem.click()
+
             
             #input("\n ------------------ \n >> Set Agree options befor provessing: \n ")
             self._first = False
+            
 
         _statusOK = True
 
