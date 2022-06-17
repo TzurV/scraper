@@ -147,7 +147,10 @@ def getPlotInformation(allSectorsInf, sectorTop5counter, holdingSectorsList):
         secPerformance = dict()
         # sort sectors by performance
         for sector in sectorsToReport:
-            secPerformance[sector] = groupedFundsList.get_group(sector)[-1:]['1m'].iloc[0]
+            try:
+                secPerformance[sector] = groupedFundsList.get_group(sector)[-1:]['1m'].iloc[0]
+            except:
+                print(f"Warning: sector {sector} information not found!")
             
         sortedSecPerformance = sorted(secPerformance.items(), key=lambda x:x[1], reverse=True)
         #print(sortedSecPerformance)
