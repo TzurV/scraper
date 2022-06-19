@@ -165,7 +165,7 @@ if __name__ == "__main__":
     #    print(sector, fund, date)
     
     # create report
-    COLUMN_NAMES=['fundName', 'Holding', 'worsenQuartile', 'worsenFERisk', 'worse3mThanSector']
+    COLUMN_NAMES=['fundName', 'Holding', 'from_date', '#weeks', 'past_held', 'worsenQuartile', 'worsenFERisk', 'worse3mThanSector', '3m', '6m', '1y']
     pdSummary = pd.DataFrame(columns=COLUMN_NAMES)
 
     # group by fundname
@@ -204,7 +204,6 @@ if __name__ == "__main__":
         print(f"\t\tCode:{fundCode}\tSector: {fundSector}")
         if Holding:
             holdingsList[fund] = True
-        print(sortedFunds[['Quartile', 'FERisk', '3m', '6m', '1y', '3y', '5y', 'Hold' ]])
 
         worse3MthanSector = False
         fundSectorPerformanceOnDate = allSectorsInf.loc[ (allSectorsInf['date'].dt.date == \
@@ -215,8 +214,6 @@ if __name__ == "__main__":
             sector3m = float(fundSectorPerformanceOnDate[sectorSelectedColumns]['3m'])
             fund3m = float(sortedFunds.iloc[0]['3m'])
             worse3MthanSector = bool(fund3m<sector3m)
-
-        #print(sortedFunds[['date', 'Quartile', 'FERisk', '3m', '6m', '1y', '3y', '5y' ]])
         
         # check if Quartile and FERisk is different
         lastQuartile = sortedFunds.Quartile.iloc[0]
@@ -229,6 +226,29 @@ if __name__ == "__main__":
                 worsenQuartile = True
             if(lastFERisk*0.95>sortedFunds.FERisk.iloc[i]):
                 worsenFERisk = True
+
+        # count number of weeks fund is held
+        #weeks_held = 0
+        hold_inf = sortedFunds['Hold'].value_counts()
+        weeks_held = 0
+        from_date = None
+        past_held = False
+        if True in hold_inf.index:
+            for i in range(0, len(sortedFunds.index)):
+                if sortedFunds.Hold.iloc[i]:
+                    from_date = sortedFunds.index[i].date()
+                    weeks_held += 1
+                else:
+                    break
+                    
+            past_held = weeks_held>hold_inf[True]
+
+        if from_date is not None:
+            print(f"# Held since {from_date} for ~{weeks_held} weeks")
+        print(sortedFunds[:20][['Quartile', 'FERisk', '3m', '6m', '1y', '3y', '5y', 'Hold' ]])
+        
+
+        # print fund analysis summary 
         if worsenQuartile or worsenFERisk or worse3MthanSector:
             print("\t#==================== Check this one =================")
             print(f"\t# {worsenQuartile}: worsen Quartile, higher FERisk: {worsenFERisk}, worst compare to Sector 3m: {worse3MthanSector} ")
@@ -236,10 +256,16 @@ if __name__ == "__main__":
                 print(f"\t\tSector {sector3m} Fund {fund3m} -> {worse3MthanSector}")
             print("==\n")
             pdSummary = pdSummary.append({'fundName':fund, 
-                                          'Holding':Holding ,
+                                          'Holding':Holding,
+                                          'from_date': from_date,
+                                          '#weeks': weeks_held,
+                                          'past_held': past_held,
                                           'worsenQuartile':worsenQuartile, 
                                           'worsenFERisk':worsenFERisk,
-                                          'worse3mThanSector':worse3MthanSector}, ignore_index=True)            
+                                          'worse3mThanSector':worse3MthanSector,
+                                          '3m':sortedFunds.iloc[0]['3m'],
+                                          '6m':sortedFunds.iloc[0]['6m'], 
+                                          '1y':sortedFunds.iloc[0]['1y']}, ignore_index=True)            
 
     print("----------- Check if all holdings are monitored --------")
     pprint.pprint(holdingsList)
