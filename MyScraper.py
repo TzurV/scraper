@@ -84,7 +84,6 @@ class MyHoldingsExcell:
                 
             trackingURLsList.append({"URL":trackingURLsColumn[indx].value,
                                      "Hold":haveIt})
-           #print(f"{haveIt} {trackingURLsColumn[indx].value}")
         
         print(f"# URLs summary: {len(trackingURLsList)} loaded and listed holding {totHoldings}")
         print(trackingURLsList[-5:-1])
@@ -227,20 +226,6 @@ class trustnetInf:
         print("Get status: ", status)
 
         if self._first :
-            #<button tabindex="0" type="button" mode="primary" class="sc-bwzfXH bbIVrv">ACCEPT ALL</button>
-            #XPATH: "/html/body/div[1]/div/div/div/div[2]/div/button[2]"
-            #https://selenium-python.readthedocs.io/getting-started.html Section:  2.2. Example Explained
-            
-            #  click 'Accept ALL'
-            #elem = #self.driver.find_element_by_xpath(u'/html/body/div[1]/div/div/div/div[2]/div/button[2]')
-            #elem.click()
-
-            #element = WebDriverWait(self.driver, 5).until(EC.element_to_be_clickable((By.XPATH, u"/html/body/div[1]/div/div/div/div[1]/div/div[2]/button[2]")))
-            #element.click()
-            #print("TZUR AABC")
-            # Click 'SAVE AND EXIT'
-            #elem = self.driver.find_element_by_xpath(u"/html/body/div[1]/div/div/div/div[3]/div[1]/button[2]")
-            #elem.click()
             
             xpath_list = list()
             xpath_list.append([False, u"/html/body/div[1]/div/div/div/div[2]/div/button[2]"])
@@ -255,7 +240,6 @@ class trustnetInf:
             while attempt<3 and required_clicks!=confirmed_clicks:
                 print(f"Click attemp number {attempt+1} out of 3")
                 attempt += 1
-                #print(xpath_list)
                 
                 for index in range(len(xpath_list)):
                     if xpath_list[index][0]:
@@ -275,27 +259,9 @@ class trustnetInf:
                     xpath_list[index][0] = True
                     confirmed_clicks += 1
 
-            if False:
-                elem = self.driver.find_element_by_xpath(u"/html/body/div[1]/div/div/div/div[3]/div[2]/button")
-                elem.click()
-
-                #Select 'I am a private investor'
-                elem = self.driver.find_element_by_xpath("/html/body/user-type-popup/div[1]/div[3]/div/div[1]/p[5]/label/span")
-                elem.click()
-
-                # Click 'I agree'
-                elem = self.driver.find_element_by_xpath("/html/body/user-type-popup/div[1]/div[3]/div/div[2]/p[3]")
-                elem.click()
-
             # if required_clicks!=confirmed_clicks:
                 # print("Failed to confirm all forms, aborting.")
                 # sys.exit()
-            
-            
-            #input("\n ------------------ \n >> Set Agree options befor provessing: \n ")
-            self._first = False
-            
-
 
         _statusOK = True
 
@@ -328,14 +294,10 @@ class trustnetInf:
             _AllTableElement = self.driver.find_elements_by_class_name("data_table")
             
             for _TableElement in _AllTableElement:
-                #print(type(_TableElement))
 
-                #if re.search('Quartile Ranking', _TableElement.text):
                 if re.search('3 m 6 m', _TableElement.text):
-                    #print(_TableElement.text)
                     # found table
                     _notFoundTable = False
-                    #print(">> found the table! ")
 
                     # get fund name
                     _fundName = self.driver.find_element_by_class_name("fundName")
@@ -366,12 +328,9 @@ class trustnetInf:
 
                 l += 1
                 valuesList = line.split(' ')
-                
-                #print(l, " ",valuesList)
 
                 if l == 1:
                     for p, key in zip(range(5), ["3m", "6m", "1y", "3y", "5y"]):
-                        #print(p, " ", key)
                         if is_number(valuesList[p]):
                             fundDict[key] = float(valuesList[p])                
 
@@ -385,18 +344,14 @@ class trustnetInf:
                 # from: https://stackoverflow.com/questions/54862426/python-selenium-get-href-value
                 
                 elems = self.driver.find_elements_by_xpath("//span//a[contains(text(),'(View sector)')]")
-                #print(elems[0].get_attribute("href"))
                 fundDict["SectorUrl"] = elems[0].get_attribute("href")
 
                 _sectorEle = self.driver.find_element_by_class_name("view-sector")
-                #print("#"+_sectorEle.text+"#")
                 _sector = re.findall('Sector: (.*) \\(View sector\\)', _sectorEle.text)
-                #print(_sector)
                 fundDict["Sector"] = _sector
 
             except Exception as ex:
                 print("Sector: ", ex) 
-                #_statusOK = False
 
             print("\t>>> Got performance ! ")
             try:
@@ -476,7 +431,6 @@ if __name__ == "__main__":
                     #print(type(_TableElement), _TableElement.text)
 
                     if re.search('Rank Sector Name', _TableElement.text):
-                        #print(_TableElement.text)
                         webTable = WebTable(_TableElement)
                         print(webTable.get_table_size())
                         for r in range(webTable.get_row_count()):
@@ -507,9 +461,7 @@ if __name__ == "__main__":
             except Exception as ex:
                 print(ex) 
                 _statusOK = False
-       
-    #sys.exit(0)
-    
+
     # for backwards compatibility, create list from the file
     if False:
         # clear list 
@@ -521,7 +473,6 @@ if __name__ == "__main__":
                 trackingURLsList.append({"URL":url,
                                          "Hold":False})
 
-        
     # loop over a list in a file
     totURLs = 0
     totSuccessful = 0
