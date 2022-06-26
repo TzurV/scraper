@@ -213,7 +213,6 @@ class trustnetInf:
 
         if not self._first:
             # open new blank tab
-            #print(len(self.driver.window_handles))
             self.driver.switch_to.window(self.driver.window_handles[0])
             self.driver.execute_script("window.open();")
             time.sleep(5)
