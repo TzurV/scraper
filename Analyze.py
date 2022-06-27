@@ -197,7 +197,7 @@ if __name__ == "__main__":
         fundSector = sortedFunds['Sector'][0]
 
         latestDate = sortedFunds.date.iloc[0]
-        print(f"Latest date {latestDate}")
+        # print(f"Latest date {latestDate}")
 
         Holding = (fund in holdingsList)
         print(f"\n-=> Fund {fund} , holding {Holding} <=-")
