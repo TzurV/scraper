@@ -224,7 +224,7 @@ class trustnetInf:
         self.driver.implicitly_wait(30)
         print("Get status: ", status)
 
-        if self._first :
+        if self._first:
             
             xpath_list = list()
             xpath_list.append([False, u"/html/body/div[1]/div/div/div/div[2]/div/button[2]"])
@@ -237,14 +237,14 @@ class trustnetInf:
             confirmed_clicks = 0
             
             while attempt<3 and required_clicks!=confirmed_clicks:
-                print(f"Click attemp number {attempt+1} out of 3")
+                print(f"Click attempt number {attempt+1} out of 3")
                 attempt += 1
                 
                 for index in range(len(xpath_list)):
                     if xpath_list[index][0]:
                         continue
 
-                    print(f"Try {index}")
+                    #print(f"Try {index}")
                     try:
                         elem = self.driver.find_element_by_xpath(xpath_list[index][1])
                         
@@ -261,6 +261,8 @@ class trustnetInf:
             # if required_clicks!=confirmed_clicks:
                 # print("Failed to confirm all forms, aborting.")
                 # sys.exit()
+
+            self._first = False
 
         _statusOK = True
 
