@@ -225,13 +225,17 @@ class trustnetInf:
         print("Get status: ", status)
 
         if self._first:
-            
+
             xpath_list = list()
+            # we value your privacy
             xpath_list.append([False, u"/html/body/div[1]/div/div/div/div[2]/div/button[2]"])
-            xpath_list.append([False, u"/html/body/div[1]/div/div/div/div[3]/div[2]/button"])
-            xpath_list.append([False, u"/html/body/user-type-popup/div[1]/div[3]/div/div[1]/p[5]/label/span"])
-            xpath_list.append([False, u"/html/body/user-type-popup/div[1]/div[3]/div/div[2]/p[3]"])
             
+            # I am a private investor
+            xpath_list.append([False, u"/html/body/user-type-popup/div[1]/div[3]/div/div[1]/p[5]/label/span"])
+            
+            # I agree
+            xpath_list.append([False, u"/html/body/user-type-popup/div[1]/div[3]/div/div[2]/p[3]/button"])
+                        
             attempt = 0
             required_clicks = len(xpath_list)
             confirmed_clicks = 0
