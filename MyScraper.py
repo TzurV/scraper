@@ -14,6 +14,7 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
 
 #import chromedriver_binary # Adds chromedriver binary to path
 
@@ -205,7 +206,10 @@ class trustnetInf:
 
     def __init__(self):
         self._first = True
-        self.driver = webdriver.Chrome()
+        self.options = Options()
+        self.options.binary_location = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+        self.driver = webdriver.Chrome(r"C:\Program Files\Google\Chrome\Application\chromedriver", options = self.options)        
+        #self.driver = webdriver.Chrome()
         self.driver.implicitly_wait(30)
 
 
@@ -452,7 +456,7 @@ if __name__ == "__main__":
 
                         # save all funds  information 
                         ## https://chrisalbon.com/python/data_wrangling/pandas_dataframe_importing_csv/
-                        fileName = "C:\\Users\\tzurv\\python\\VScode\\scraper\\" + dateStamp + "_TrustNetSectors.csv"
+                        fileName = "C:\\Users\\tzurv\\projects\\scraper\\" + dateStamp + "_TrustNetSectors.csv"
                         print(f"Saving Sectors information to {fileName}")
                         sectors_df.to_csv(fileName, sep=',', float_format='%.2f')
 
@@ -519,13 +523,14 @@ if __name__ == "__main__":
                 
     # save all funds  information 
     ## https://chrisalbon.com/python/data_wrangling/pandas_dataframe_importing_csv/
-    fileName = "C:\\Users\\tzurv\\python\\VScode\\scraper\\" + dateStamp + "_FundsInf.csv"
+    fileName = "C:\\Users\\tzurv\\projects\\scraper\\" + dateStamp + "_FundsInf.csv"
     try:
         print(f"Saving information to {fileName}")    
         allFundsInf.to_csv(fileName, sep=',', float_format='%.2f')
     except:
-        print(f"Tryin AGain to Save information to {fileName}")    
-        allFundsInf.to_csv(fileName+".II", sep=',', float_format='%.2f')
+        print(f"FAILED to save to {fileName}")
+        print(f"SAVING TO Local_" + dateStamp + "_FundsInf.csv")    
+        allFundsInf.to_csv("Local_" + dateStamp + "_FundsInf.csv", sep=',', float_format='%.2f')
 
     if not totURLs == totSuccessful:
         print('#'*50)
