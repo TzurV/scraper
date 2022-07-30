@@ -229,7 +229,7 @@ if __name__ == "__main__":
 
         # count number of weeks fund is held
         #weeks_held = 0
-        hold_inf = sortedFunds['Hold'].value_counts()
+        hold_inf = sortedFunds['Hold'].value_counts()        
         weeks_held = 0
         from_date = None
         past_held = False
@@ -241,13 +241,12 @@ if __name__ == "__main__":
                 else:
                     break
                     
-            past_held = weeks_held>hold_inf[True]
+            past_held = True if True in hold_inf.index else False
 
         if from_date is not None:
             print(f"# Held since {from_date} for ~{weeks_held} weeks")
         print(sortedFunds[:20][['Quartile', 'FERisk', '3m', '6m', '1y', '3y', '5y', 'Hold' ]])
         
-
         # print fund analysis summary 
         if worsenQuartile or worsenFERisk or worse3MthanSector:
             print("\t#==================== Check this one =================")
