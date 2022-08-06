@@ -235,10 +235,13 @@ class trustnetInf:
             xpath_list.append([False, u"/html/body/div[1]/div/div/div/div[2]/div/button[2]"])
             
             # I am a private investor
-            xpath_list.append([False, u"/html/body/user-type-popup/div[1]/div[3]/div/div[1]/p[5]/label/span"])
+            #xpath_list.append([False, u"/html/body/user-type-popup/div[1]/div[3]/div/div[1]/p[5]/label/span"])
+            xpath_list.append([False, u"/html/body/div[5]/div/div/div[2]/div[1]/div[5]/label/span"])
             
             # I agree
-            xpath_list.append([False, u"/html/body/user-type-popup/div[1]/div[3]/div/div[2]/p[3]/button"])
+            #xpath_list.append([False, u"/html/body/user-type-popup/div[1]/div[3]/div/div[2]/p[3]/button"])
+            xpath_list.append([False, u"/html/body/div[5]/div/div/div[2]/button"])
+            
                         
             attempt = 0
             required_clicks = len(xpath_list)
