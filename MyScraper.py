@@ -16,6 +16,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 
+# import Action chains 
+from selenium.webdriver.common.action_chains import ActionChains
+
 #import chromedriver_binary # Adds chromedriver binary to path
 
 import pandas as pd
@@ -209,7 +212,8 @@ class trustnetInf:
         self._first = True
         self.options = Options()
         self.options.binary_location = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-        self.driver = webdriver.Chrome(r"C:\Program Files\Google\Chrome\Application\chromedriver", options = self.options)        
+        self.driver = webdriver.Chrome(r"C:\Program Files\Google\Chrome\Application\chromedriver", options = self.options)
+        self.sectors_table_page = 1
         #self.driver = webdriver.Chrome()
         self.driver.implicitly_wait(30)
 
@@ -218,20 +222,43 @@ class trustnetInf:
         elem = self.driver.find_element_by_xpath(xpath)
         elem.click()
     
-    def click_spanclass(self, spanclass):
-        print(f"In click_spanclass")
-        while True:
-            self.driver.implicitly_wait(5)
-            #wait for pagination to show 
-            EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'pagination')]")) 
-            next_page_btn = self.driver.find_elements_by_xpath("//div[contains(@class, 'pagination')]//li[contains(text(), 'next')]")
-            if len(next_page_btn) < 1:
-                print("No more pages left")
-                break
-            else:
-                print("->Click()")
-                WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//li[.='next']"))).click()
+    def click_next(self):
+        print(f"In click_next")
+        # try:
+            # elem = self.driver.find_element_by_xpath(r'/html/body/div[2]/main/section/div/div[2]/div/div[2]/div[2]/div/div/div/div')
+            # create action chain object
+            # action = ActionChains(self.driver)
+            # move the cursor
+            # perform the operation
+            # action.move_to_element(elem).perform()
+            # self.driver.implicitly_wait(2)
+            
+        # except Exception as ex:
+            # pass
+        
+        self.sectors_table_page += 1
+        all_set_page = self.driver.find_elements_by_class_name("set-page")
+        print("Len is ",len(all_set_page))
+        for ele in all_set_page:
+            if len(ele.text)>0:
+                print(f"ele.txt is {ele.text}")
+                print(f"location {ele.location}")
+                if ele.text == str(self.sectors_table_page):
+                    try:
+                        action = ActionChains(self.driver)
+                        action.move_to_element(ele).perform()
+                    except Exception as ex:
+                        pass
+                    button = WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable(ele))
+                    #print(button)
+                    #self.driver.execute_script('arguments[0].click()', button)
+                    
+                    #self.driver.implicitly_wait(2)
+                    #ele.click()
+                    return True
+        return False
 
+        # /html/body/div[2]/main/section/div/div[2]/div/div[2]/div[2]/div/div/div/section/div/div[2]/div[1]/div/table/tbody/tr[26]/td/div/a[3]
     
     def getFundInf_v2(self, fundUrl, openAndReturn=False):
 
@@ -375,8 +402,11 @@ class trustnetInf:
                 if re.search('Quartile Ranking', line):
                     #<td class="text-start">Quartile Ranking</td>
                     #<span class="quartiles--1">1</span>
-                    _quartiles1 = self.driver.find_element_by_class_name("quartiles--1")
-                    fundDict["Quartile"] = int(_quartiles1.text)
+                    try:
+                        _quartiles1 = self.driver.find_element_by_class_name("quartiles--1")
+                        fundDict["Quartile"] = int(_quartiles1.text)
+                    except Exception as ex:
+                        fundDict["Quartile"] = "NA"
 
             
             print("\t>>> Get fund Sector ! ")
@@ -390,7 +420,6 @@ class trustnetInf:
                 
                 # /html/body/div[3]/main/section/div/div[1]/div/div[1]/div[1]/p/a
                 elems = self.driver.find_elements_by_xpath("//div//a[contains(text(),'(View sector)')]")
-                print(f"LEN elems {len(elems)}")
                 fundDict["SectorUrl"] = elems[0].get_attribute("href")
 
                 #_sectorEle = self.driver.find_element_by_class_name("view-sector")
@@ -414,8 +443,6 @@ class trustnetInf:
             
             # success 
             finally:
-                print(fundDict)
-                sys.exit(0)
                 
                 # close tab 
                 # (source: https://medium.com/@pavel.tashev/python-and-selenium-open-focus-and-close-a-new-tab-4cc606b73388)
@@ -462,7 +489,7 @@ if __name__ == "__main__":
     
     ChromeInstance = trustnetInf()
 
-    if False:
+    if True:
         # SECTOR ANALYSIS
         print("Loading sectors performance")
         url = "https://www.trustnet.com/fund/sectors/performance?universe=O"
@@ -472,50 +499,51 @@ if __name__ == "__main__":
 
             try:
                 
-                _notFoundTable = True
+                # _notFoundTable = True
+                nextTable = True
                 chrom_driver.implicitly_wait(1)
-                _AllTableElement = chrom_driver.find_elements_by_class_name("table-responsive")
-                print(f"Len of _AllTableElement is {len(_AllTableElement)}")
-                
                 column_names = ["date", "sectorName", "1m", "3m", "6m", "1y", "3y", "5y"]
                 sectors_df = pd.DataFrame(columns = column_names)
 
-                print("DBG1")
-                
-                for _TableElement in _AllTableElement:
-                    print("DBG2")
-                    print(f"{type(_TableElement)} text {_TableElement.text}")
+                while nextTable:
+                    _AllTableElement = chrom_driver.find_elements_by_class_name("table-responsive")
+                    print(f"Len of _AllTableElement is {len(_AllTableElement)}")
+                                    
+                    for _TableElement in _AllTableElement:
+                        print("DBG2")
+                        print(f"{type(_TableElement)} text {_TableElement.text}")
 
-                    if re.search('Name', _TableElement.text):
-                        print("DBG3")
-                        webTable = WebTable(_TableElement)
-                        print(f"table_size={webTable.get_table_size()}")
-                        for r in range(webTable.get_row_count()):
-                            rowDataList = [current_time ,*webTable.row_data(r+1)[:7]] 
-                            # switch index by date
-                            # rowDataList[0] = current_time
+                        if re.search('Name', _TableElement.text):
+                            print("DBG3")
+                            webTable = WebTable(_TableElement)
+                            print(f"table_size={webTable.get_table_size()}")
+                            for r in range(webTable.get_row_count()):
+                                rowDataList = [current_time ,*webTable.row_data(r+1)[:7]] 
+                                # switch index by date
+                                # rowDataList[0] = current_time
 
-                            # append data
-                            if len(rowDataList)==8 and len(rowDataList[7])>0:
-                                #print(f"rowDataList={rowDataList}")
-                                df_length = len(sectors_df)
-                                sectors_df.loc[df_length] = rowDataList
-                                #print(sectors_df)
+                                # append data
+                                if len(rowDataList)==8 and len(rowDataList[7])>0:
+                                    #print(f"rowDataList={rowDataList}")
+                                    df_length = len(sectors_df)
+                                    sectors_df.loc[df_length] = rowDataList
+                                    #print(sectors_df)
 
-                        print(f"shape {sectors_df.shape}")
-                        print("Sectors Information")
-                        print(sectors_df)
+                            print(f"shape {sectors_df.shape}")
+                            print("Sectors Information")
+                            print(sectors_df)
 
-                        # save all funds  information 
-                        ## https://chrisalbon.com/python/data_wrangling/pandas_dataframe_importing_csv/
-                        fileName = "C:\\Users\\tzurv\\projects\\scraper\\" + dateStamp + "_TrustNetSectors.csv"
-                        print(f"Saving Sectors information to {fileName}")
-                        sectors_df.to_csv(fileName, sep=',', float_format='%.2f')
+                            # done gathering information, exit loop 
+                            #break
+                            #print("click_next")
+                            #nextTable = ChromeInstance.click_next()
+                            nextTable = False
 
-                        # done gathering information, exit loop 
-                        #break
-                        #print("click_spanclass")
-                        #ChromeInstance.click_spanclass("class=set-page next ")
+                # save all funds  information 
+                ## https://chrisalbon.com/python/data_wrangling/pandas_dataframe_importing_csv/
+                fileName = "C:\\Users\\tzurv\\projects\\scraper\\" + dateStamp + "_TrustNetSectors.csv"
+                print(f"Saving Sectors information to {fileName}")
+                sectors_df.to_csv(fileName, sep=',', float_format='%.2f')
 
                     
             except NoSuchElementException:
