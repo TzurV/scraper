@@ -125,7 +125,8 @@ class WebTable:
         row_number = row_number
         row = self.table.find_elements_by_xpath("//tr["+str(row_number)+"]/td")
         rData = []
-        for webElement in row :
+        for indx, webElement in enumerate(row) :
+            #print(f"[{indx}] |{webElement.text}|")
             rData.append(webElement.text)
 
         return rData
@@ -213,6 +214,25 @@ class trustnetInf:
         self.driver.implicitly_wait(30)
 
 
+    def click_xpath(self, xpath):
+        elem = self.driver.find_element_by_xpath(xpath)
+        elem.click()
+    
+    def click_spanclass(self, spanclass):
+        print(f"In click_spanclass")
+        while True:
+            self.driver.implicitly_wait(5)
+            #wait for pagination to show 
+            EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'pagination')]")) 
+            next_page_btn = self.driver.find_elements_by_xpath("//div[contains(@class, 'pagination')]//li[contains(text(), 'next')]")
+            if len(next_page_btn) < 1:
+                print("No more pages left")
+                break
+            else:
+                print("->Click()")
+                WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//li[.='next']"))).click()
+
+    
     def getFundInf_v2(self, fundUrl, openAndReturn=False):
 
         if not self._first:
@@ -247,7 +267,7 @@ class trustnetInf:
             required_clicks = len(xpath_list)
             confirmed_clicks = 0
             
-            while attempt<3 and required_clicks!=confirmed_clicks:
+            while attempt<1 and required_clicks!=confirmed_clicks:
                 print(f"Click attempt number {attempt+1} out of 3")
                 attempt += 1
                 
@@ -279,7 +299,7 @@ class trustnetInf:
 
         # open web page and return
         if openAndReturn:
-            time.sleep(60)
+            time.sleep(10)
             return _statusOK, self.driver
     
         print("Check point 1 ! ")
@@ -303,17 +323,22 @@ class trustnetInf:
         try:
             _notFoundTable = True
             self.driver.implicitly_wait(1)
-            _AllTableElement = self.driver.find_elements_by_class_name("data_table")
+            #_AllTableElement = self.driver.find_elements_by_class_name("w-100")
+            #print(f"_AllTableElement len {len(_AllTableElement)}")
+            _AllTableElement = self.driver.find_elements_by_class_name("fe-table")
+            #print(f"_AllTableElement len {len(_AllTableElement)}")
             
-            for _TableElement in _AllTableElement:
+            for indx, _TableElement in enumerate(_AllTableElement):
+                #print(f"[{indx}] |{_TableElement.text}|")
 
                 if re.search('3 m 6 m', _TableElement.text):
                     # found table
                     _notFoundTable = False
 
                     # get fund name
-                    _fundName = self.driver.find_element_by_class_name("fundName")
+                    _fundName = self.driver.find_element_by_class_name("key-wrapper__fund-name")
                     fundDict["fundName"] = _fundName.text
+                    print(f"fund name {_fundName.text}")
 
                     break
                  
@@ -331,6 +356,7 @@ class trustnetInf:
             l = 0
 
             for line in _TableElement.text.split('\n'):
+                #print(f"line |{line}|")
 
                 if  re.search('3 m 6 m', line):
                     _found_3m_6m = True
@@ -347,36 +373,50 @@ class trustnetInf:
                             fundDict[key] = float(valuesList[p])                
 
                 if re.search('Quartile Ranking', line):
-                    if is_number(valuesList[2]):
-                        fundDict["Quartile"] = int(valuesList[2])
+                    #<td class="text-start">Quartile Ranking</td>
+                    #<span class="quartiles--1">1</span>
+                    _quartiles1 = self.driver.find_element_by_class_name("quartiles--1")
+                    fundDict["Quartile"] = int(_quartiles1.text)
 
-            print("\t>>> Got fund Sector ! ")
+            
+            print("\t>>> Get fund Sector ! ")
             try:
                 # look for sector
                 # from: https://stackoverflow.com/questions/54862426/python-selenium-get-href-value
                 
-                elems = self.driver.find_elements_by_xpath("//span//a[contains(text(),'(View sector)')]")
+                #<span class="key-wrapper__fund-name">IT Global Equity Income</span>
+                _sector = self.driver.find_element_by_class_name("key-wrapper__fund-name")
+                fundDict["Sector"] = _sector.text
+                
+                # /html/body/div[3]/main/section/div/div[1]/div/div[1]/div[1]/p/a
+                elems = self.driver.find_elements_by_xpath("//div//a[contains(text(),'(View sector)')]")
+                print(f"LEN elems {len(elems)}")
                 fundDict["SectorUrl"] = elems[0].get_attribute("href")
 
-                _sectorEle = self.driver.find_element_by_class_name("view-sector")
-                _sector = re.findall('Sector: (.*) \\(View sector\\)', _sectorEle.text)
-                fundDict["Sector"] = _sector
+                #_sectorEle = self.driver.find_element_by_class_name("view-sector")
+                #_sector = re.findall('Sector: (.*) \\(View sector\\)', _sectorEle.text)
+                #fundDict["Sector"] = _sector
 
             except Exception as ex:
                 print("Sector: ", ex) 
 
-            print("\t>>> Got performance ! ")
+            print("\t>>> Get Risk ! ")
+            #<span class="fe-fundinfo__riskscore">129</span>
             try:
             #     #<span class="risk_score">72</span>
-                _FERisk = self.driver.find_element_by_class_name("risk_score")
+                _FERisk = self.driver.find_element_by_class_name("fe-fundinfo__riskscore")
                 fundDict["FERisk"] = int(_FERisk.text)
                 print("\t\t>>>> Got Risk score ! ")
         
             except NoSuchElementException:  
                 pass
             
+            
             # success 
             finally:
+                print(fundDict)
+                sys.exit(0)
+                
                 # close tab 
                 # (source: https://medium.com/@pavel.tashev/python-and-selenium-open-focus-and-close-a-new-tab-4cc606b73388)
                 self.driver.close()
@@ -422,7 +462,7 @@ if __name__ == "__main__":
     
     ChromeInstance = trustnetInf()
 
-    if True:
+    if False:
         # SECTOR ANALYSIS
         print("Loading sectors performance")
         url = "https://www.trustnet.com/fund/sectors/performance?universe=O"
@@ -434,27 +474,36 @@ if __name__ == "__main__":
                 
                 _notFoundTable = True
                 chrom_driver.implicitly_wait(1)
-                _AllTableElement = chrom_driver.find_elements_by_class_name("data_table")
+                _AllTableElement = chrom_driver.find_elements_by_class_name("table-responsive")
+                print(f"Len of _AllTableElement is {len(_AllTableElement)}")
                 
                 column_names = ["date", "sectorName", "1m", "3m", "6m", "1y", "3y", "5y"]
                 sectors_df = pd.DataFrame(columns = column_names)
 
+                print("DBG1")
+                
                 for _TableElement in _AllTableElement:
-                    #print(type(_TableElement), _TableElement.text)
+                    print("DBG2")
+                    print(f"{type(_TableElement)} text {_TableElement.text}")
 
-                    if re.search('Rank Sector Name', _TableElement.text):
+                    if re.search('Name', _TableElement.text):
+                        print("DBG3")
                         webTable = WebTable(_TableElement)
-                        print(webTable.get_table_size())
+                        print(f"table_size={webTable.get_table_size()}")
                         for r in range(webTable.get_row_count()):
-                            rowDataList = webTable.row_data(r+1)[:8]
+                            rowDataList = [current_time ,*webTable.row_data(r+1)[:7]] 
                             # switch index by date
-                            rowDataList[0] = current_time
+                            # rowDataList[0] = current_time
 
                             # append data
-                            df_length = len(sectors_df)
-                            sectors_df.loc[df_length] = rowDataList
+                            if len(rowDataList)==8 and len(rowDataList[7])>0:
+                                #print(f"rowDataList={rowDataList}")
+                                df_length = len(sectors_df)
+                                sectors_df.loc[df_length] = rowDataList
+                                #print(sectors_df)
 
-                        print(sectors_df.shape)
+                        print(f"shape {sectors_df.shape}")
+                        print("Sectors Information")
                         print(sectors_df)
 
                         # save all funds  information 
@@ -464,7 +513,10 @@ if __name__ == "__main__":
                         sectors_df.to_csv(fileName, sep=',', float_format='%.2f')
 
                         # done gathering information, exit loop 
-                        break
+                        #break
+                        #print("click_spanclass")
+                        #ChromeInstance.click_spanclass("class=set-page next ")
+
                     
             except NoSuchElementException:
                 print(f"webpage {url} don't include required performance table")
@@ -473,6 +525,7 @@ if __name__ == "__main__":
             except Exception as ex:
                 print(ex) 
                 _statusOK = False
+    #sys.exit(0)
 
     # for backwards compatibility, create list from the file
     if False:
