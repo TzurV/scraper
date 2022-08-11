@@ -15,6 +15,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.keys import Keys 
 
 # import Action chains 
 from selenium.webdriver.common.action_chains import ActionChains
@@ -121,7 +122,7 @@ class WebTable:
         return {"rows": self.get_row_count(),
                 "columns": self.get_column_count()}
 
-    def row_data(self, row_number):
+    def row_data(self, row_number, *, remove_nl=True):
         if(row_number == 0):
             raise Exception("Row number starts from 1")
 
@@ -223,42 +224,28 @@ class trustnetInf:
         elem.click()
     
     def click_next(self):
-        print(f"In click_next")
-        # try:
-            # elem = self.driver.find_element_by_xpath(r'/html/body/div[2]/main/section/div/div[2]/div/div[2]/div[2]/div/div/div/div')
-            # create action chain object
-            # action = ActionChains(self.driver)
-            # move the cursor
-            # perform the operation
-            # action.move_to_element(elem).perform()
-            # self.driver.implicitly_wait(2)
-            
-        # except Exception as ex:
-            # pass
         
         self.sectors_table_page += 1
+        self.driver.find_element_by_tag_name('body').send_keys(Keys.END)
+        self.driver.implicitly_wait(1)
+        
         all_set_page = self.driver.find_elements_by_class_name("set-page")
-        print("Len is ",len(all_set_page))
         for ele in all_set_page:
             if len(ele.text)>0:
-                print(f"ele.txt is {ele.text}")
-                print(f"location {ele.location}")
                 if ele.text == str(self.sectors_table_page):
+                    print(f"Found page !!")
                     try:
                         action = ActionChains(self.driver)
                         action.move_to_element(ele).perform()
                     except Exception as ex:
                         pass
-                    button = WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable(ele))
-                    #print(button)
-                    #self.driver.execute_script('arguments[0].click()', button)
                     
-                    #self.driver.implicitly_wait(2)
-                    #ele.click()
+                    self.driver.implicitly_wait(2)
+                    ele.click()
+                    self.driver.implicitly_wait(2)
                     return True
+                    
         return False
-
-        # /html/body/div[2]/main/section/div/div[2]/div/div[2]/div[2]/div/div/div/section/div/div[2]/div[1]/div/table/tbody/tr[26]/td/div/a[3]
     
     def getFundInf_v2(self, fundUrl, openAndReturn=False):
 
@@ -507,39 +494,28 @@ if __name__ == "__main__":
 
                 while nextTable:
                     _AllTableElement = chrom_driver.find_elements_by_class_name("table-responsive")
-                    print(f"Len of _AllTableElement is {len(_AllTableElement)}")
                                     
                     for _TableElement in _AllTableElement:
-                        print("DBG2")
-                        print(f"{type(_TableElement)} text {_TableElement.text}")
 
                         if re.search('Name', _TableElement.text):
-                            print("DBG3")
                             webTable = WebTable(_TableElement)
-                            print(f"table_size={webTable.get_table_size()}")
                             for r in range(webTable.get_row_count()):
-                                rowDataList = [current_time ,*webTable.row_data(r+1)[:7]] 
-                                # switch index by date
-                                # rowDataList[0] = current_time
+                                row_data = webTable.row_data(r+1)
+                                while len(row_data)>0 and len(row_data[0])==0:
+                                    row_data.pop(0)
+                                
+                                rowDataList = [current_time ,*row_data[:7]]
 
                                 # append data
                                 if len(rowDataList)==8 and len(rowDataList[7])>0:
-                                    #print(f"rowDataList={rowDataList}")
                                     df_length = len(sectors_df)
                                     sectors_df.loc[df_length] = rowDataList
-                                    #print(sectors_df)
 
-                            print(f"shape {sectors_df.shape}")
-                            print("Sectors Information")
-                            print(sectors_df)
-
-                            # done gathering information, exit loop 
-                            #break
-                            #print("click_next")
-                            #nextTable = ChromeInstance.click_next()
-                            nextTable = False
+                            nextTable = ChromeInstance.click_next()
 
                 # save all funds  information 
+                print("# Sectors Information")
+                print(sectors_df)
                 ## https://chrisalbon.com/python/data_wrangling/pandas_dataframe_importing_csv/
                 fileName = "C:\\Users\\tzurv\\projects\\scraper\\" + dateStamp + "_TrustNetSectors.csv"
                 print(f"Saving Sectors information to {fileName}")
@@ -553,7 +529,6 @@ if __name__ == "__main__":
             except Exception as ex:
                 print(ex) 
                 _statusOK = False
-    #sys.exit(0)
 
     # for backwards compatibility, create list from the file
     if False:
