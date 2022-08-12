@@ -233,7 +233,7 @@ class trustnetInf:
         for ele in all_set_page:
             if len(ele.text)>0:
                 if ele.text == str(self.sectors_table_page):
-                    print(f"Found page !!")
+                    print(f"Found page {self.sectors_table_page} !!")
                     try:
                         action = ActionChains(self.driver)
                         action.move_to_element(ele).perform()
@@ -402,8 +402,15 @@ class trustnetInf:
                 # from: https://stackoverflow.com/questions/54862426/python-selenium-get-href-value
                 
                 #<span class="key-wrapper__fund-name">IT Global Equity Income</span>
-                _sector = self.driver.find_element_by_class_name("key-wrapper__fund-name")
-                fundDict["Sector"] = _sector.text
+                _sector = self.driver.find_elements_by_class_name("key-wrapper__fund-name")
+                #print(len(_sector))
+                #for indx, s in enumerate(_sector):
+                #    print(f"{indx} {s.text}")
+                #_sector = self.driver.find_elements_by_xpath(r"/html/body/div[3]/main/section/div/div[1]/div/div[1]/div[1]/p")
+                #print(len(_sector), _sector[0].text)
+                fundDict["Sector"] = _sector[1].text
+                #print(_sector.text)
+                #sys.exit(0)
                 
                 # /html/body/div[3]/main/section/div/div[1]/div/div[1]/div[1]/p/a
                 elems = self.driver.find_elements_by_xpath("//div//a[contains(text(),'(View sector)')]")
