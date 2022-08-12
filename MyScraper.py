@@ -216,7 +216,7 @@ class trustnetInf:
         self.driver = webdriver.Chrome(r"C:\Program Files\Google\Chrome\Application\chromedriver", options = self.options)
         self.sectors_table_page = 1
         #self.driver = webdriver.Chrome()
-        self.driver.implicitly_wait(30)
+        self.driver.implicitly_wait(10)
 
 
     def click_xpath(self, xpath):
@@ -259,7 +259,7 @@ class trustnetInf:
             self.driver.switch_to.window(self.driver.window_handles[-1])   
 
         status = self.driver.get(fundUrl)
-        self.driver.implicitly_wait(30)
+        self.driver.implicitly_wait(3)
         print("Get status: ", status)
 
         if self._first:
@@ -316,7 +316,7 @@ class trustnetInf:
             time.sleep(10)
             return _statusOK, self.driver
     
-        print("Check point 1 ! ")
+        # print("Check point 1 ! ")
 
         # dictionary for gathering information from web page
         fundDict =  {   "date":"NA",
@@ -330,13 +330,14 @@ class trustnetInf:
                         "FERisk": "NA",
                         "Sector": "NA",
                         "SectorUrl": "NA",
-                        "Hold": False}
+                        "Hold": False,
+                        "price": "NA"}
 
-        print("Check point 2 ! ")
+        # print("Check point 2 ! ")
         time.sleep(5)
         try:
             _notFoundTable = True
-            self.driver.implicitly_wait(1)
+            #self.driver.implicitly_wait(1)
             #_AllTableElement = self.driver.find_elements_by_class_name("w-100")
             #print(f"_AllTableElement len {len(_AllTableElement)}")
             _AllTableElement = self.driver.find_elements_by_class_name("fe-table")
@@ -370,7 +371,6 @@ class trustnetInf:
             l = 0
 
             for line in _TableElement.text.split('\n'):
-                #print(f"line |{line}|")
 
                 if  re.search('3 m 6 m', line):
                     _found_3m_6m = True
@@ -395,7 +395,6 @@ class trustnetInf:
                     except Exception as ex:
                         fundDict["Quartile"] = "NA"
 
-            
             print("\t>>> Get fund Sector ! ")
             try:
                 # look for sector
@@ -403,25 +402,45 @@ class trustnetInf:
                 
                 #<span class="key-wrapper__fund-name">IT Global Equity Income</span>
                 _sector = self.driver.find_elements_by_class_name("key-wrapper__fund-name")
-                #print(len(_sector))
-                #for indx, s in enumerate(_sector):
-                #    print(f"{indx} {s.text}")
-                #_sector = self.driver.find_elements_by_xpath(r"/html/body/div[3]/main/section/div/div[1]/div/div[1]/div[1]/p")
-                #print(len(_sector), _sector[0].text)
-                fundDict["Sector"] = _sector[1].text
-                #print(_sector.text)
-                #sys.exit(0)
+                
+                if _sector[1].text.strip():
+                    fundDict["Sector"] = _sector[1].text
+                else:
+                    # empty sector string, use seconder source
+                    _sector = self.driver.find_elements_by_xpath(r"/html/body/div[3]/main/section/div/div[1]/div/div[1]/div[1]/p")
+                    print(len(_sector), _sector[0].text)
                 
                 # /html/body/div[3]/main/section/div/div[1]/div/div[1]/div[1]/p/a
                 elems = self.driver.find_elements_by_xpath("//div//a[contains(text(),'(View sector)')]")
                 fundDict["SectorUrl"] = elems[0].get_attribute("href")
 
-                #_sectorEle = self.driver.find_element_by_class_name("view-sector")
-                #_sector = re.findall('Sector: (.*) \\(View sector\\)', _sectorEle.text)
-                #fundDict["Sector"] = _sector
-
             except Exception as ex:
                 print("Sector: ", ex) 
+
+            print("\t\t>>> get price")
+            try:
+                unit_Information = self.driver.find_element_by_class_name("fe-table.fe_table__head-left.table-all-left")
+                unitInformationTable = WebTable(unit_Information)
+                price = "NA"
+                for line in unitInformationTable.get_text().split('\n'):
+                    if not re.search('price', line):
+                        continue
+                    if re.search('Previous Close price:', line): 
+                        fundDict["price"] = line.split(" ")[3]
+                    elif re.search('Mid price:', line):
+                        fundDict["price"] = line.split(" ")[2]
+                    elif re.search('Bid/Offer spread:', line):
+                        fundDict["price"] = line.split(" ")[2]
+                    else:
+                        continue
+                    break
+                        
+                fundDict["price"] = re.subn('[pÂ]', '', fundDict["price"])[0]
+                print(f"\t\t>>>>Price is {fundDict['price']}")
+
+            except Exception as ex:
+                print("Get price failed: ", ex) 
+
 
             print("\t>>> Get Risk ! ")
             #<span class="fe-fundinfo__riskscore">129</span>
@@ -429,11 +448,10 @@ class trustnetInf:
             #     #<span class="risk_score">72</span>
                 _FERisk = self.driver.find_element_by_class_name("fe-fundinfo__riskscore")
                 fundDict["FERisk"] = int(_FERisk.text)
-                print("\t\t>>>> Got Risk score ! ")
+                print(f"\t\t>>>> Got Risk score {fundDict['FERisk']}! ")
         
             except NoSuchElementException:  
                 pass
-            
             
             # success 
             finally:
@@ -441,7 +459,7 @@ class trustnetInf:
                 # close tab 
                 # (source: https://medium.com/@pavel.tashev/python-and-selenium-open-focus-and-close-a-new-tab-4cc606b73388)
                 self.driver.close()
-                time.sleep(5)
+                time.sleep(1)
                 # return connected information in dataframe
                 return True, pd.DataFrame(fundDict, index=[0])
 
