@@ -9,19 +9,6 @@ warnings.filterwarnings('ignore')
 
 if __name__ == "__main__":
 
-    #================================
-    # load current holdings from Holdings.txt
-    # holdingsList = {}
-    # HoldingsFile = "Holdings.txt"
-    # print("# Loading current holdings funds list:")
-    # with open(HoldingsFile) as fp:
-    #     line = fp.readline()
-
-    #     while line:
-    #         print("Fund |{}|".format(line.strip()))
-    #         holdingsList[line.strip()] = False
-    #         line = fp.readline()
-
     print("#=====================================================")
     print("-------- loading '*_FundsInf.csv'  ----------------")
 
@@ -46,7 +33,7 @@ if __name__ == "__main__":
         fundInf["date"] = fundInf["date"].apply(dtm)
 
         # get unique fund code
-        fundCode = lambda P: P.split('/')[-2]
+        fundCode = lambda P: str(P.split('/')[-2]).lower()
         fundInf["fundCode"] = fundInf["url"].apply(fundCode)
         last_fundInf = fundInf
 
