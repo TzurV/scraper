@@ -30,6 +30,7 @@ if __name__ == "__main__":
     loadedFile = 0
     last_file = None
     last_fundInf = None
+
     print(f"current working directory {os. getcwd()}")
     for file in glob.glob("*_FundsInf.csv"):
         # print(f"Loading {file}" )
@@ -55,16 +56,19 @@ if __name__ == "__main__":
         #print(fundInf.columns)
 
     print(f"# Total '*_FundsInf.csv' files loaded {loadedFile}")
+    print("\n")
 
     # get unique fund code
     # fundCode = lambda P: P.split('/')[-2]
     # allFundsInf["fundCode"] = allFundsInf["url"].apply(fundCode)
 
-    print(allFundsInf.columns)
+    print(f"allFundsInf.columns: {allFundsInf.columns}")
+    print("\n")
 
     # update holdingsList based on the last in the list 
     # (should be the latest one)
-    print(f"# gathering holding information from {last_file}")
+    print(f"# Gathering holding information from {last_file}....")
+    
     holdingsList = {}
     activeMonitoredList = []
     for fund in last_fundInf.itertuples():
@@ -74,9 +78,9 @@ if __name__ == "__main__":
             holdingsList[fund.fundName] = False
               
     print("-------- loaded completed ----------------")
+    print("\n")
  
-
-    print("# Load Sector Information =====================================================")
+    print("# Loading Sector Information")
     # create empty dataframe
     sectorSelectedColumns = ['1m', '3m', '6m', '1y', '3y', '5y']
     allSectorsInf = pd.DataFrame()
@@ -103,9 +107,7 @@ if __name__ == "__main__":
     print(f"# Total '*_TrustNetSectors.csv' files loaded {totalSectorsInfFiles}")
     print(f"Latest file is {last_file}")
     print(f"cout funds per sector over the whole data collection period {allSectorsInf.shape}")
-    # print(allSectorsInf.columns)
     
-
     #=============================
     #                      3 first rows and 5 columns
     #print(allFundsInf.iloc[:3, 0:5])
@@ -138,6 +140,7 @@ if __name__ == "__main__":
     #    if sector not in represented_sectors:
     #        print(f"{sector}")
         
+    # collect sectors summary
     sectors_summary = dict()
     for sector in list(last_sectorsInf['sectorName']):
         sectors_summary[sector]= {'count':'None', 'Weekly':'N/A'}        
@@ -150,6 +153,7 @@ if __name__ == "__main__":
             sectors_summary[a[0]]= {'count':'None', 'Weekly':'N/A'}            
         sectors_summary[a[0]]['Weekly'] = len(a[1])
     
+    # Title
     print(f"{'sector':<40}: {'funds':>4} {'Cases':>6} {sectorSelectedColumns}")
     for sector in sectors_summary:
         indx = last_sectorsInf.index[last_sectorsInf['sectorName']==sector]
@@ -157,6 +161,8 @@ if __name__ == "__main__":
             print(f"{sector:<40}: {sectors_summary[sector]['count']:>4} {sectors_summary[sector]['Weekly']:>6} [{last_sectorsInf.loc[indx, sectorSelectedColumns].to_string(index=False, header=False, col_space=7)}]")
         else:
             print(f"{sector:<40}: {sectors_summary[sector]['count']:>4} {sectors_summary[sector]['Weekly']:>6}")
+    print(f"-- End of sectors summary.")
+    print("\n")
 
     #https://realpython.com/pandas-groupby/
     #groupedFundsList = allFundsInf.groupby(['Sector','fundName', 'date'], as_index=False)
@@ -165,16 +171,13 @@ if __name__ == "__main__":
     #    print(sector, fund, date)
     
     # create report
-    COLUMN_NAMES=['fundName', 'Holding', 'from_date', '#weeks', 'past_held', 'worsenQuartile', 'worsenFERisk', 'worse3mThanSector', '3m', '6m', '1y']
+    COLUMN_NAMES=['fundName', 'Holding', 'from_date', '#weeks', 'past_held', 'cur_price', 'purchase_price', '3m', '6m', '1y', 'worsenQuartile', 'worsenFERisk', 'worse3mThanSector']
     pdSummary = pd.DataFrame(columns=COLUMN_NAMES)
-
-    # group by fundname
-    #groupedFundsList = allFundsInf.groupby('fundName', as_index=False)
     
     # group by fundname (code)
     groupedFundsList = allFundsInf.groupby('fundCode', as_index=False)
     
-    #print(groupedFundsList)
+    # print(groupedFundsList)
     for fundCode, frame in groupedFundsList:
 
         # skip funds not on the current excel list
@@ -197,7 +200,6 @@ if __name__ == "__main__":
         fundSector = sortedFunds['Sector'][0]
 
         latestDate = sortedFunds.date.iloc[0]
-        # print(f"Latest date {latestDate}")
 
         Holding = (fund in holdingsList)
         print(f"\n-=> Fund {fund} , holding {Holding} <=-")
@@ -210,7 +212,6 @@ if __name__ == "__main__":
                                    pd.to_datetime(latestDate, format='%Y-%m-%d', errors='ignore')) & \
                                        (allSectorsInf['sectorName'] == fundSector ) ]
         if len(fundSectorPerformanceOnDate):
-            #print(fundSectorPerformanceOnDate[sectorSelectedColumns])
             sector3m = float(fundSectorPerformanceOnDate[sectorSelectedColumns]['3m'])
             fund3m = float(sortedFunds.iloc[0]['3m'])
             worse3MthanSector = bool(fund3m<sector3m)
@@ -228,24 +229,25 @@ if __name__ == "__main__":
                 worsenFERisk = True
 
         # count number of weeks fund is held
-        #weeks_held = 0
         hold_inf = sortedFunds['Hold'].value_counts()        
         weeks_held = 0
         from_date = None
         past_held = False
+        purchase_price = None
         if True in hold_inf.index:
             for i in range(0, len(sortedFunds.index)):
                 if sortedFunds.Hold.iloc[i]:
                     from_date = sortedFunds.index[i].date()
                     weeks_held += 1
+                    purchase_price = sortedFunds.price.iloc[i]
                 else:
                     break
                     
             past_held = True if True in hold_inf.index else False
 
         if from_date is not None:
-            print(f"# Held since {from_date} for ~{weeks_held} weeks")
-        print(sortedFunds[:20][['Quartile', 'FERisk', '3m', '6m', '1y', '3y', '5y', 'Hold' ]])
+            print(f"# Held since {from_date} for ~{weeks_held} weeks, ~purchase price {purchase_price}")
+        print(sortedFunds[:20][['Quartile', 'FERisk', '3m', '6m', '1y', '3y', '5y', 'Hold', 'price' ]].to_string())
         
         # print fund analysis summary 
         if worsenQuartile or worsenFERisk or worse3MthanSector:
@@ -254,32 +256,31 @@ if __name__ == "__main__":
             if worse3MthanSector:
                 print(f"\t\tSector {sector3m} Fund {fund3m} -> {worse3MthanSector}")
             print("==\n")
-            pdSummary = pdSummary.append({'fundName':fund, 
-                                          'Holding':Holding,
-                                          'from_date': from_date,
-                                          '#weeks': weeks_held,
-                                          'past_held': past_held,
-                                          'worsenQuartile':worsenQuartile, 
-                                          'worsenFERisk':worsenFERisk,
-                                          'worse3mThanSector':worse3MthanSector,
-                                          '3m':sortedFunds.iloc[0]['3m'],
-                                          '6m':sortedFunds.iloc[0]['6m'], 
-                                          '1y':sortedFunds.iloc[0]['1y']}, ignore_index=True)            
 
-    print("----------- Check if all holdings are monitored --------")
+        pdSummary = pdSummary.append({'fundName':fund, 
+                                      'Holding':Holding,
+                                      'from_date': from_date,
+                                      '#weeks': weeks_held,
+                                      'cur_price': sortedFunds.iloc[0]['price'],
+                                      'purchase_price': purchase_price,
+                                      'past_held': past_held,
+                                      '3m':sortedFunds.iloc[0]['3m'],
+                                      '6m':sortedFunds.iloc[0]['6m'], 
+                                      '1y':sortedFunds.iloc[0]['1y'],
+                                      'worsenQuartile':worsenQuartile, 
+                                      'worsenFERisk':worsenFERisk,
+                                      'worse3mThanSector':worse3MthanSector
+                                      }, ignore_index=True)            
+
+    print("#--------------------------------------------------------#")
+    print("#----------- Check if all holdings are monitored --------#")
     pprint.pprint(holdingsList)
     for a in holdingsList:
         if not holdingsList[a]:
             print(f"Check fund {a}")
 
-
-    print("")
+    print("\n")
     print("====== Observations summary ============")
     print(pdSummary.sort_values(by=['Holding'], ascending=False).to_string())
-
-
-
-        
-
 
 
