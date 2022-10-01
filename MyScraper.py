@@ -83,7 +83,7 @@ class MyHoldingsExcell:
         totHoldings = 0
         for indx in range(3, len(trackingURLsColumn)):
             haveIt = False
-            if holdingColumn[indx].value :
+            if holdingColumn[indx].value == "Hold":
                 haveIt = True
                 totHoldings += 1
                 
