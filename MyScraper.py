@@ -572,15 +572,19 @@ if __name__ == "__main__":
     failedURLs = list()
     for URLinf in trackingURLsList:
         url = URLinf['URL']
+        if url == None:
+            break
+        print(f"URLinf is {URLinf}, totURLs={totURLs}/{len(trackingURLsList)}, totSuccessful={totSuccessful}")
         
         totURLs += 1 
+        print(f"# fetching: {url}")
         url = url.rstrip("\n")
-        print(f"# fetching: {url}") 
+        #print(f"# fetching: {url}") 
         
         reTries = 1
         maxNtime = 3
         while reTries<maxNtime:
-            #print(f"# fetching: {url}")
+            
             Status, fundInf = ChromeInstance.getFundInf_v2(url)
             reTries += 1
             
