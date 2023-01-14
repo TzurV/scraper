@@ -397,30 +397,33 @@ class trustnetInf:
         if not _notFoundTable and _statusOK:
             l = 0
 
+            fundDict["Quartile"] = "NA"
+            getQuartileRanking = False
             for line in _TableElement.text.split('\n'):
+                l += 1
 
+                #print(f"l={l} |{line}|")
                 if  re.search('3 m 6 m', line):
                     _found_3m_6m = True
                     continue
                 elif not _found_3m_6m:
                     continue
 
-                l += 1
-                valuesList = line.split(' ')
-
                 if l == 1:
+                    valuesList = line.split(' ')
                     for p, key in zip(range(5), ["3m", "6m", "1y", "3y", "5y"]):
                         if is_number(valuesList[p]):
-                            fundDict[key] = float(valuesList[p])                
+                            fundDict[key] = float(valuesList[p]) 
 
                 if re.search('Quartile Ranking', line):
-                    #<td class="text-start">Quartile Ranking</td>
-                    #<span class="quartiles--1">1</span>
-                    try:
-                        _quartiles1 = self.driver.find_element_by_class_name("quartiles--1")
-                        fundDict["Quartile"] = int(_quartiles1.text)
-                    except Exception as ex:
-                        fundDict["Quartile"] = "NA"
+                    getQuartileRanking = True
+                    continue
+
+                if getQuartileRanking:
+                    fundDict["Quartile"] = int(line)
+                    break
+            print(f"\tQuartile={fundDict['Quartile']}")
+                
 
             print("\t>>> Get fund Sector ! ")
             try:
