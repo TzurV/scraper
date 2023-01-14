@@ -402,14 +402,14 @@ class trustnetInf:
             for line in _TableElement.text.split('\n'):
                 l += 1
 
-                #print(f"l={l} |{line}|")
-                if  re.search('3 m 6 m', line):
+                #print(f"l={l} |{line}| {'3 m 6 m' in line}")
+                if '3 m 6 m' in line:
                     _found_3m_6m = True
                     continue
                 elif not _found_3m_6m:
                     continue
 
-                if l == 1:
+                if l == 2:
                     valuesList = line.split(' ')
                     for p, key in zip(range(5), ["3m", "6m", "1y", "3y", "5y"]):
                         if is_number(valuesList[p]):
@@ -425,7 +425,7 @@ class trustnetInf:
                     except:
                         pass
                     break
-            print(f"\tQuartile={fundDict['Quartile']}")
+            print(f"\tQuartile={fundDict['Quartile']} fundDict['3m']={fundDict['3m']}")
                 
 
             print("\t>>> Get fund Sector ! ")
