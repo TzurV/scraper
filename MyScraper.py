@@ -420,7 +420,10 @@ class trustnetInf:
                     continue
 
                 if getQuartileRanking:
-                    fundDict["Quartile"] = int(line)
+                    try:
+                        fundDict["Quartile"] = int(line)
+                    except:
+                        pass
                     break
             print(f"\tQuartile={fundDict['Quartile']}")
                 
