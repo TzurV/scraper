@@ -70,6 +70,7 @@ class MyHoldingsExcell:
     def __init__(self):
         
         self.AllHoldingsFile = r"D:\Family\צור\bank and money\Investments_reports\AllHoldings_Updated.xlsx"
+        self.AllHoldingsFile = r"C:\Family\Drive(D)\Family\צור\bank and money\Investments_reports\AllHoldings_Updated.xlsx"
         print(f"# getting iformation from {self.AllHoldingsFile}.")
         self.workbook = load_workbook(filename=self.AllHoldingsFile, data_only=True)
         pass
@@ -228,6 +229,8 @@ class trustnetInf:
         self.sectors_table_page += 1
         self.driver.find_element_by_tag_name('body').send_keys(Keys.END)
         self.driver.implicitly_wait(1)
+
+        #
         
         all_set_page = self.driver.find_elements_by_class_name("set-page")
         for ele in all_set_page:
@@ -235,9 +238,31 @@ class trustnetInf:
                 if ele.text == str(self.sectors_table_page):
                     print(f"Found page {self.sectors_table_page} !!")
                     try:
-                        action = ActionChains(self.driver)
-                        action.move_to_element(ele).perform()
+                        #action = ActionChains(self.driver)
+                        #action.move_to_element(ele).perform()
+
+                        element = ele #self.driver.find_element_by_class_name("fe_pagination")
+                        #element.location_once_scrolled_into_view
+                        #print(element.size['height'])
+                        #print(element.location['y'])
+                        desired_y = (element.size['height'] / 2) + element.location['y']
+                        
+                        window_h = self.driver.execute_script('return window.innerHeight')
+                        #print(window_h)
+                        window_y = self.driver.execute_script('return window.pageYOffset')
+                        #print(window_y)
+                        current_y = (window_h / 2) + window_y
+                        scroll_y_by = desired_y - current_y
+                        #print(desired_y, window_h, current_y, scroll_y_by)
+                        
+                        for m in [-100]:
+                            #print(f"moving to {scroll_y_by}+{m}")
+                            self.driver.execute_script("window.scrollBy(0, arguments[0]);", scroll_y_by+m)                            
+                            #print("Waiting")
+                            time.sleep(1)
+
                     except Exception as ex:
+                        print(f"Failed Next Page {ex}")
                         pass
                     
                     self.driver.implicitly_wait(2)
@@ -270,11 +295,13 @@ class trustnetInf:
             
             # I am a private investor
             #xpath_list.append([False, u"/html/body/user-type-popup/div[1]/div[3]/div/div[1]/p[5]/label/span"])
-            xpath_list.append([False, u"/html/body/div[5]/div/div/div[2]/div[1]/div[5]/label/span"])
+            #xpath_list.append([False, u"/html/body/div[5]/div/div/div[2]/div[1]/div[5]/label/span"])
+            xpath_list.append([False, u"/html/body/div[6]/div/div/div[2]/div[1]/div[5]/label/span"])
             
             # I agree
             #xpath_list.append([False, u"/html/body/user-type-popup/div[1]/div[3]/div/div[2]/p[3]/button"])
-            xpath_list.append([False, u"/html/body/div[5]/div/div/div[2]/button"])
+            #xpath_list.append([False, u"/html/body/div[5]/div/div/div[2]/button"])
+            xpath_list.append([False, u"/html/body/div[6]/div/div/div[2]/button"])
             
                         
             attempt = 0
@@ -519,8 +546,8 @@ if __name__ == "__main__":
 
                 while nextTable:
                     _AllTableElement = chrom_driver.find_elements_by_class_name("table-responsive")
-                                    
                     for _TableElement in _AllTableElement:
+                        
 
                         if re.search('Name', _TableElement.text):
                             webTable = WebTable(_TableElement)
@@ -536,7 +563,12 @@ if __name__ == "__main__":
                                     df_length = len(sectors_df)
                                     sectors_df.loc[df_length] = rowDataList
 
-                            nextTable = ChromeInstance.click_next()
+                            try:
+                                nextTable = ChromeInstance.click_next()
+                            except Exception as ex:
+                                nextTable = False
+                            
+                                
 
                 # save all funds  information 
                 print("# Sectors Information")
@@ -554,6 +586,7 @@ if __name__ == "__main__":
             except Exception as ex:
                 print(ex) 
                 _statusOK = False
+
 
     # for backwards compatibility, create list from the file
     if False:
