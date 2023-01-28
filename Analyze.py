@@ -198,10 +198,15 @@ if __name__ == "__main__":
         fundSectorPerformanceOnDate = allSectorsInf.loc[ (allSectorsInf['date'].dt.date == \
                                    pd.to_datetime(latestDate, format='%Y-%m-%d', errors='ignore')) & \
                                        (allSectorsInf['sectorName'] == fundSector ) ]
-        if len(fundSectorPerformanceOnDate):
-            sector3m = float(fundSectorPerformanceOnDate[sectorSelectedColumns]['3m'])
-            fund3m = float(sortedFunds.iloc[0]['3m'])
-            worse3MthanSector = bool(fund3m<sector3m)
+
+        try:
+            if len(fundSectorPerformanceOnDate):
+                sector3m = float(fundSectorPerformanceOnDate[sectorSelectedColumns]['3m'])
+                fund3m = float(sortedFunds.iloc[0]['3m'])
+                worse3MthanSector = bool(fund3m<sector3m)
+        except Exception as ex:
+            pass
+        
         
         # check if Quartile and FERisk is different
         lastQuartile = sortedFunds.Quartile.iloc[0]
