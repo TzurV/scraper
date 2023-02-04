@@ -146,10 +146,11 @@ if __name__ == "__main__":
         indx = last_sectorsInf.index[last_sectorsInf['sectorName']==sector]
         if len(indx)>0:
             print(f"{sector:<40}: {sectors_summary[sector]['count']:>4} {sectors_summary[sector]['Weekly']:>6} [{last_sectorsInf.loc[indx, sectorSelectedColumns].to_string(index=False, header=False, col_space=7)}]")
-        else:
+        elif isinstance(sectors_summary[sector]['count'], int):
             print(f"{sector:<40}: {sectors_summary[sector]['count']:>4} {sectors_summary[sector]['Weekly']:>6}")
     print(f"-- End of sectors summary.")
     print("\n")
+    
 
     #https://realpython.com/pandas-groupby/
     #groupedFundsList = allFundsInf.groupby(['Sector','fundName', 'date'], as_index=False)
