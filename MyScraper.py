@@ -271,6 +271,49 @@ class trustnetInf:
                     return True
                     
         return False
+        
+    #<label class="form-check-label" for="tc-check-Investor">
+    #            <input class="form-check-input tc-check" type="radio" value="Investor" name="tc-check" id="tc-check-Investor">
+    #            <span class="custom-checkbox fill-styling"></span>
+    #            I am a private investor
+    #        </label>
+    #<button type="button" class="btn btn-primary mb-3" data-bs-dismiss="modal" id="tc-modal-agree">I agree</button>
+    #<span class="custom-checkbox fill-styling"></span>
+    def press_I_agree(self):
+        print("WebDriverWait")
+        WebDriverWait(self.driver, 10).until(lambda d: d.find_element(By.ID, "termsAndConditionsLabel"))
+        time.sleep(2)
+ 
+        # I am a private investor
+        print("I am a private investor")
+        #allow_all_button = self.driver.find_element(By.ID, "tc-check-Investor")
+        #allow_all_button.click()
+        
+        # Click on the label instead of the span element
+        #checkbox_label.click()        
+        #self.driver.find_element(By.CSS_SELECTOR, "input#tc-check-Investor.tc-check").click()
+        self.driver.find_element(By.XPATH, "//label[@for='tc-check-Investor']").click()
+        #span = self.driver.find_element(By.CSS_SELECTOR, "label#tc-check-Investor span")
+        #span.click()
+
+        # I agree
+        print("I agree")
+        #allow_all_button = self.driver.find_element(By.ID, "tc-modal-agree")
+        #allow_all_button.click()
+
+        # Wait for the button to load
+        WebDriverWait(self.driver, 10).until(lambda d: d.find_element(By.ID, "tc-modal-agree"))
+
+        #driver.find_element(By.CSS_SELECTOR, "button.btn.btn-primary.mb-3#tc-modal-agree").click()
+        # Locate the button using its ID
+        agree_button = self.driver.find_element(By.ID, "tc-modal-agree")
+
+        # Click the button
+        agree_button.click()        
+                
+                
+        
+        pass
     
     def getFundInf_v2(self, fundUrl, openAndReturn=False):
 
@@ -289,55 +332,83 @@ class trustnetInf:
 
         if self._first:
 
-            xpath_list = list()
-            # we value your privacy
-            xpath_list.append([False, u"/html/body/div[1]/div/div/div/div[2]/div/button[2]"])
+            #/html/body/div[1]
+
+            #<button id="CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll" class="CybotCookiebotDialogBodyButton" tabindex="0" lang="en">Allow all</button>
+            # Wait for the cookiebot to load
+            WebDriverWait(self.driver, 10).until(lambda d: d.find_element(By.ID, "CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll"))
+
+            # Click the 'allow all' button
+            allow_all_button = self.driver.find_element(By.ID, "CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll")
+            allow_all_button.click()
             
-            # I am a private investor
-            #xpath_list.append([False, u"/html/body/user-type-popup/div[1]/div[3]/div/div[1]/p[5]/label/span"])
-            #xpath_list.append([False, u"/html/body/div[5]/div/div/div[2]/div[1]/div[5]/label/span"])
-            xpath_list.append([False, u"/html/body/div[6]/div/div/div[2]/div[1]/div[5]/label/span"])
-            
-            # I agree
-            #xpath_list.append([False, u"/html/body/user-type-popup/div[1]/div[3]/div/div[2]/p[3]/button"])
-            #xpath_list.append([False, u"/html/body/div[5]/div/div/div[2]/button"])
-            xpath_list.append([False, u"/html/body/div[6]/div/div/div[2]/button"])
-            
-                        
-            attempt = 0
-            required_clicks = len(xpath_list)
-            confirmed_clicks = 0
-            
-            while attempt<1 and required_clicks!=confirmed_clicks:
-                print(f"Click attempt number {attempt+1} out of 3")
-                attempt += 1
+            #<h5 class="modal-title" id="termsAndConditionsLabel">HI GUEST PLEASE TELL US A LITTLE ABOUT YOURSELF SO THAT WE CAN DISPLAY THE MOST APPROPRIATE CONTENT TO YOU:</h5>
+            # Wait for the cookiebot to load
+            WebDriverWait(self.driver, 10).until(lambda d: d.find_element(By.ID, "termsAndConditionsLabel"))
+
+            # Click the 'allow all' button
+            allow_all_button = self.driver.find_element(By.ID, "termsAndConditionsLabel")
+            allow_all_button.click()
+
+            self.press_I_agree()
+ 
+            if False:
+                xpath_list = list()
+                # we value your privacy
+                #xpath_list.append([False, u"/html/body/div[1]/div/div/div/div[2]/div/button[2]"])
                 
-                for index in range(len(xpath_list)):
-                    if xpath_list[index][0]:
-                        continue
+                #/html/body/div[10]/div/div/div[2]/div[1]/div[5]
+                #/html/body/div[10]/div/div/div[2]/div[1]/div[5]/label/span
+                # I am a private investor
+                #xpath_list.append([False, u"/html/body/user-type-popup/div[1]/div[3]/div/div[1]/p[5]/label/span"])
+                #xpath_list.append([False, u"/html/body/div[5]/div/div/div[2]/div[1]/div[5]/label/span"])
+                xpath_list.append([False, u"html/body/div[10]/div/div/div[2]/div[1]/div[5]/label/span"])
+                xpath_list.append([False, u"html/body/div[10]/div/div/div[2]/div[1]/div[5]/label/span"])
+                
+                # I agree
+                #<button type="button" class="btn btn-primary mb-3" data-bs-dismiss="modal" id="tc-modal-agree">I agree</button>
+                #xpath_list.append([False, u"/html/body/user-type-popup/div[1]/div[3]/div/div[2]/p[3]/button"])
+                #xpath_list.append([False, u"/html/body/div[5]/div/div/div[2]/button"])
+                xpath_list.append([False, u"/html/body/div[10]/div/div/div[2]/button"])
+                xpath_list.append([False, u"/html/body/div[10]/div/div/div[2]/button"])
+                
+                # Allow all
+                #xpath_list.append([False, u"/html/body/div[2]/div/div[4]/div[1]/div[2]/button[4]"])
+                
+                attempt = 0
+                required_clicks = len(xpath_list)
+                confirmed_clicks = 0
+                
+                while attempt<1 and required_clicks!=confirmed_clicks:
+                    print(f"Click attempt number {attempt+1} out of 3")
+                    attempt += 1
+                    
+                    for index in range(len(xpath_list)):
+                        if xpath_list[index][0]:
+                            continue
 
-                    #print(f"Try {index}")
-                    try:
-                        elem = self.driver.find_element_by_xpath(xpath_list[index][1])
-                        
-                    except NoSuchElementException:
-                        # wait and try again
-                        time.sleep(1)
-                        continue
+                        #print(f"Try {index}")
+                        try:
+                            elem = self.driver.find_element_by_xpath(xpath_list[index][1])
+                            
+                        except NoSuchElementException:
+                            # wait and try again
+                            time.sleep(1)
+                            continue
 
-                    # click
-                    elem.click()
-                    xpath_list[index][0] = True
-                    confirmed_clicks += 1
+                        # click
+                        elem.click()
+                        xpath_list[index][0] = True
+                        confirmed_clicks += 1
 
-            # if required_clicks!=confirmed_clicks:
-                # print("Failed to confirm all forms, aborting.")
-                # sys.exit()
+                # if required_clicks!=confirmed_clicks:
+                    # print("Failed to confirm all forms, aborting.")
+                    # sys.exit()
 
             self._first = False
 
         _statusOK = True
-
+        
         # open web page and return
         if openAndReturn:
             time.sleep(10)
@@ -571,6 +642,7 @@ if __name__ == "__main__":
 
                             try:
                                 nextTable = ChromeInstance.click_next()
+                                
                             except Exception as ex:
                                 nextTable = False
                             
@@ -593,6 +665,7 @@ if __name__ == "__main__":
                 print(ex) 
                 _statusOK = False
 
+    print("Done !!")
 
     # for backwards compatibility, create list from the file
     if False:
