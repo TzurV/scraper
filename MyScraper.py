@@ -26,44 +26,9 @@ import pandas as pd
 from datetime import datetime
 import re
 
-
 import sys
 import time
 
-#============================================
-# (Scraper) C:\Users\...\scraper>pip freeze  > requirements.txt
-
-#https://pip.pypa.io/en/stable/reference/pip_freeze/
-#$ env1/bin/pip freeze > requirements.txt
-#$ env2/bin/pip install -r requirements.txt
-
-
-# ----------------------------- example ------------------------
-# driver = webdriver.Chrome()
-# driver.get("http://www.python.org")
-# assert "Python" in driver.title
-
-
-# # 20-may-2020
-
-# elem = driver.find_element_by_name("q")
-# elem.clear()
-# elem.send_keys("start")
-# driver.find_element_by_name("submit").click()
-
-#================================= End Example =================================
-
-#------------------------------------------------------------------------
-'''
-
-Getting Started With openpyxl
-
-https://realpython.com/openpyxl-excel-spreadsheets-python/
-pip install openpyxl
-'''
-
-
-#from openpyxl import Workbook
 from openpyxl import load_workbook
 
 class MyHoldingsExcell:
@@ -241,8 +206,6 @@ class trustnetInf:
                 if ele.text == str(self.sectors_table_page):
                     print(f"Found page {self.sectors_table_page} !!")
                     try:
-                        #action = ActionChains(self.driver)
-                        #action.move_to_element(ele).perform()
 
                         element = ele #self.driver.find_element_by_class_name("fe_pagination")
                         #element.location_once_scrolled_into_view
@@ -251,17 +214,12 @@ class trustnetInf:
                         desired_y = (element.size['height'] / 2) + element.location['y']
                         
                         window_h = self.driver.execute_script('return window.innerHeight')
-                        #print(window_h)
                         window_y = self.driver.execute_script('return window.pageYOffset')
-                        #print(window_y)
                         current_y = (window_h / 2) + window_y
                         scroll_y_by = desired_y - current_y
-                        #print(desired_y, window_h, current_y, scroll_y_by)
                         
                         for m in [-100]:
-                            #print(f"moving to {scroll_y_by}+{m}")
                             self.driver.execute_script("window.scrollBy(0, arguments[0]);", scroll_y_by+m)                            
-                            #print("Waiting")
                             time.sleep(1)
 
                     except Exception as ex:
@@ -289,20 +247,12 @@ class trustnetInf:
  
         # I am a private investor
         print("I am a private investor")
-        #allow_all_button = self.driver.find_element(By.ID, "tc-check-Investor")
-        #allow_all_button.click()
         
         # Click on the label instead of the span element
-        #checkbox_label.click()        
-        #self.driver.find_element(By.CSS_SELECTOR, "input#tc-check-Investor.tc-check").click()
         self.driver.find_element(By.XPATH, "//label[@for='tc-check-Investor']").click()
-        #span = self.driver.find_element(By.CSS_SELECTOR, "label#tc-check-Investor span")
-        #span.click()
 
         # I agree
         print("I agree")
-        #allow_all_button = self.driver.find_element(By.ID, "tc-modal-agree")
-        #allow_all_button.click()
 
         # Wait for the button to load
         WebDriverWait(self.driver, 10).until(lambda d: d.find_element(By.ID, "tc-modal-agree"))
@@ -312,10 +262,7 @@ class trustnetInf:
         agree_button = self.driver.find_element(By.ID, "tc-modal-agree")
 
         # Click the button
-        agree_button.click()        
-                
-                
-        
+        agree_button.click()                        
         pass
     
     def getFundInf_v2(self, fundUrl, openAndReturn=False):
@@ -355,59 +302,6 @@ class trustnetInf:
 
             self.press_I_agree()
  
-            if False:
-                xpath_list = list()
-                # we value your privacy
-                #xpath_list.append([False, u"/html/body/div[1]/div/div/div/div[2]/div/button[2]"])
-                
-                #/html/body/div[10]/div/div/div[2]/div[1]/div[5]
-                #/html/body/div[10]/div/div/div[2]/div[1]/div[5]/label/span
-                # I am a private investor
-                #xpath_list.append([False, u"/html/body/user-type-popup/div[1]/div[3]/div/div[1]/p[5]/label/span"])
-                #xpath_list.append([False, u"/html/body/div[5]/div/div/div[2]/div[1]/div[5]/label/span"])
-                xpath_list.append([False, u"html/body/div[10]/div/div/div[2]/div[1]/div[5]/label/span"])
-                xpath_list.append([False, u"html/body/div[10]/div/div/div[2]/div[1]/div[5]/label/span"])
-                
-                # I agree
-                #<button type="button" class="btn btn-primary mb-3" data-bs-dismiss="modal" id="tc-modal-agree">I agree</button>
-                #xpath_list.append([False, u"/html/body/user-type-popup/div[1]/div[3]/div/div[2]/p[3]/button"])
-                #xpath_list.append([False, u"/html/body/div[5]/div/div/div[2]/button"])
-                xpath_list.append([False, u"/html/body/div[10]/div/div/div[2]/button"])
-                xpath_list.append([False, u"/html/body/div[10]/div/div/div[2]/button"])
-                
-                # Allow all
-                #xpath_list.append([False, u"/html/body/div[2]/div/div[4]/div[1]/div[2]/button[4]"])
-                
-                attempt = 0
-                required_clicks = len(xpath_list)
-                confirmed_clicks = 0
-                
-                while attempt<1 and required_clicks!=confirmed_clicks:
-                    print(f"Click attempt number {attempt+1} out of 3")
-                    attempt += 1
-                    
-                    for index in range(len(xpath_list)):
-                        if xpath_list[index][0]:
-                            continue
-
-                        #print(f"Try {index}")
-                        try:
-                            elem = self.driver.find_element_by_xpath(xpath_list[index][1])
-                            
-                        except NoSuchElementException:
-                            # wait and try again
-                            time.sleep(1)
-                            continue
-
-                        # click
-                        elem.click()
-                        xpath_list[index][0] = True
-                        confirmed_clicks += 1
-
-                # if required_clicks!=confirmed_clicks:
-                    # print("Failed to confirm all forms, aborting.")
-                    # sys.exit()
-
             self._first = False
 
         _statusOK = True
@@ -417,8 +311,6 @@ class trustnetInf:
             time.sleep(10)
             return _statusOK, self.driver
     
-        # print("Check point 1 ! ")
-
         # dictionary for gathering information from web page
         fundDict =  {   "date":"NA",
                         "fundName": "NA",
@@ -435,7 +327,6 @@ class trustnetInf:
                         "price": "NA",
                         "Holding%": "NA"}
 
-        # print("Check point 2 ! ")
         time.sleep(5)
         try:
             _notFoundTable = True
@@ -742,9 +633,4 @@ if __name__ == "__main__":
         print(f"# Not all data collected. File includes {totSuccessful} out of {totURLs} urls in the list #")
         print('#'*50)
         print(failedURLs)
-
-
-
-
-
 
