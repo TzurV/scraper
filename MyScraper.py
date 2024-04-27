@@ -214,6 +214,7 @@ class trustnetInf:
         self._first = True
         self.options = Options()
         self.options.binary_location = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+        self.options.add_argument('--disable-site-isolation-trials')
         self.driver = webdriver.Chrome(r"C:\Program Files\Google\Chrome\Application\chromedriver", options = self.options)
         self.sectors_table_page = 1
         #self.driver = webdriver.Chrome()
