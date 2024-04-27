@@ -79,7 +79,8 @@ class MyHoldingsExcell:
         TrackingList_sheet = self.workbook["TrackingList"]
         trackingURLsColumn = TrackingList_sheet["F:F"]        
         holdingColumn = TrackingList_sheet["G:G"]
-        
+        holdingPercentageColumn = TrackingList_sheet["H:H"]
+           
         trackingURLsList = []
         totHoldings = 0
         for indx in range(3, len(trackingURLsColumn)):
@@ -89,7 +90,8 @@ class MyHoldingsExcell:
                 totHoldings += 1
                 
             trackingURLsList.append({"URL":trackingURLsColumn[indx].value,
-                                     "Hold":haveIt})
+                                     "Hold":haveIt,
+                                     "Holding%":holdingPercentageColumn[indx].value})
         
         print(f"# URLs summary: {len(trackingURLsList)} loaded and listed holding {totHoldings}")
         print(trackingURLsList[-5:-1])
@@ -103,7 +105,7 @@ class MyHoldingsExcell:
 # https://chercher.tech/python/table-selenium-python
 
 # globals
-column_names = ["date", "fundName", "Quartile", "FERisk", "3m", "6m", "1y", "3y", "5y", "url", "Hold"]
+column_names = ["date", "fundName", "Quartile", "FERisk", "3m", "6m", "1y", "3y", "5y", "url", "Hold", "Holding%"]
 Empty_fund_df = pd.DataFrame(columns = column_names)
 
 
@@ -430,7 +432,8 @@ class trustnetInf:
                         "Sector": "NA",
                         "SectorUrl": "NA",
                         "Hold": False,
-                        "price": "NA"}
+                        "price": "NA",
+                        "Holding%": "NA"}
 
         # print("Check point 2 ! ")
         time.sleep(5)
@@ -706,6 +709,7 @@ if __name__ == "__main__":
                 fundInf.loc[0, 'date'] = current_time
                 fundInf.loc[0, 'url'] = url
                 fundInf.loc[0, 'Hold'] = URLinf['Hold']
+                fundInf.loc[0, "Holding%"] =  URLinf["Holding%"]
                 
                 allFundsInf = allFundsInf.append(fundInf, ignore_index=True)
                 print(allFundsInf)

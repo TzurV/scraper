@@ -240,7 +240,7 @@ if __name__ == "__main__":
 
         if from_date is not None:
             print(f"# Held since {from_date} for ~{weeks_held} weeks, ~purchase price {purchase_price}")
-        print(sortedFunds[:20][['Quartile', 'FERisk', '3m', '6m', '1y', '3y', '5y', 'Hold', 'price' ]].to_string())
+        print(sortedFunds[:20][['Quartile', 'FERisk', '3m', '6m', '1y', '3y', '5y', 'Hold', 'price' , 'Holding%']].to_string())
         
         # print fund analysis summary 
         if worsenQuartile or worsenFERisk or worse3MthanSector:
