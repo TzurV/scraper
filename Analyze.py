@@ -172,7 +172,7 @@ if __name__ == "__main__":
         if not fundCode in activeMonitoredList:
             continue
 
-        sortedFunds = frame.drop_duplicates(subset ="date", keep = False)
+        sortedFunds = frame.drop_duplicates(subset ="date", keep = 'first')
 
         # date  column becomes index column
         sortedFunds.set_index('date', drop=False, append=False, inplace=True, verify_integrity=False)
