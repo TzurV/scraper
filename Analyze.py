@@ -10,90 +10,85 @@ warnings.filterwarnings('ignore')
 if __name__ == "__main__":
 
     print("#=====================================================")
-    print("-------- loading '*_FundsInf.csv'  ----------------")
+    print("-------- Loading fund information ('*_FundsInf.csv') ----------------")
 
-    # create empty dataframe
+    # Create empty dataframe to store all fund information
     allFundsInf = pd.DataFrame()
     loadedFile = 0
     last_file = None
     last_fundInf = None
 
-    print(f"current working directory {os. getcwd()}")
+    print(f"Current working directory: {os.getcwd()}")
+
+    # Iterate over all '_FundsInf.csv' files in the current directory
     for file in glob.glob("*_FundsInf.csv"):
-        # print(f"Loading {file}" )
         last_file = file
-        loadedFile +=1
+        loadedFile += 1
 
-        # loading examples
-        #https://chrisalbon.com/python/data_wrangling/pandas_dataframe_importing_csv/
-
+        # Load fund information from the CSV file
         fundInf = pd.read_csv(file, sep=',')
 
-        dtm = lambda x: datetime.strptime(x, "%d/%m/%y %H:%M")
-        fundInf["date"] = fundInf["date"].apply(dtm)
+        # Convert 'date' column to datetime format
+        fundInf["date"] = fundInf["date"].apply(lambda x: datetime.strptime(x, "%d/%m/%y %H:%M"))
 
-        # get unique fund code
-        fundCode = lambda P: str(P.split('/')[-2]).lower()
-        fundInf["fundCode"] = fundInf["url"].apply(fundCode)
+        # Extract fund code from 'url' column
+        fundInf["fundCode"] = fundInf["url"].apply(lambda P: str(P.split('/')[-2]).lower())
         last_fundInf = fundInf
 
+        # Append fund information to the main dataframe
         allFundsInf = allFundsInf.append(fundInf, ignore_index=True)
-        #print(fundInf.head())
-        #print(fundInf.shape)
-        #print(fundInf.columns)
 
-    print(f"# Total '*_FundsInf.csv' files loaded {loadedFile}")
+    print(f"# Total '*_FundsInf.csv' files loaded: {loadedFile}")
     print("\n")
 
-    # get unique fund code
-    # fundCode = lambda P: P.split('/')[-2]
-    # allFundsInf["fundCode"] = allFundsInf["url"].apply(fundCode)
-
-    print(f"allFundsInf.columns: {allFundsInf.columns}")
+    print(f"All Funds Information Columns: {allFundsInf.columns}")
     print("\n")
 
-    # update holdingsList based on the last in the list 
-    # (should be the latest one)
+    # Gather holding information from the last loaded file
     print(f"# Gathering holding information from {last_file}....")
-    
-    holdingsList = {}
-    activeMonitoredList = []
+
+    holdingsList = {}  # Dictionary to track fund holdings (True/False)
+    activeMonitoredList = []  # List of actively monitored fund codes
+
+    # Iterate through the last loaded fund information
     for fund in last_fundInf.itertuples():
         activeMonitoredList.append(fund.fundCode)
         if fund.Hold:
-            # will set to true when the fund is analyzed
-            holdingsList[fund.fundName] = False
-              
-    print("-------- loaded completed ----------------")
+            holdingsList[fund.fundName] = False  # Initialize holdings to False
+
+    print("-------- Loading completed ----------------")
     print("\n")
- 
+
+    # Load sector information ('*_TrustNetSectors.csv')
     print("# Loading Sector Information")
-    # create empty dataframe
+
     sectorSelectedColumns = ['1m', '3m', '6m', '1y', '3y', '5y']
-    allSectorsInf = pd.DataFrame()
+    allSectorsInf = pd.DataFrame()  # Dataframe to store all sector information
     totalSectorsInfFiles = 0
     last_sectorsInf = None
+
+    # Iterate over all '*_TrustNetSectors.csv' files
     for file in glob.glob("*_TrustNetSectors.csv"):
-        #print(f"Loading {file}" )
         totalSectorsInfFiles += 1
 
+        # Load sector information from CSV file
         sectorsInf = pd.read_csv(file, sep=',', dayfirst=True)
-        dtm = lambda x: datetime.strptime(x, "%d/%m/%y %H:%M")
-        sectorsInf["date"] = sectorsInf["date"].apply(dtm)
-        
-        # removes rows that dont include numbers 
-        #like  '21,20/09/20 09:52,IA Not yet assigned,-,-,-,-,-,-'
+        sectorsInf["date"] = sectorsInf["date"].apply(lambda x: datetime.strptime(x, "%d/%m/%y %H:%M"))
+
+        # Remove rows with missing numerical data
         sectorsInf = sectorsInf.drop(sectorsInf[sectorsInf['1m'] == '-'].index)
+
+        # Convert selected columns to float
         for col in sectorSelectedColumns:
-            sectorsInf[col] = sectorsInf[col].astype(float) 
+            sectorsInf[col] = sectorsInf[col].astype(float)
+
         last_sectorsInf = sectorsInf
-                
         allSectorsInf = allSectorsInf.append(sectorsInf, ignore_index=True)
 
     print("-------- ALL ----------------")
-    print(f"# Total '*_TrustNetSectors.csv' files loaded {totalSectorsInfFiles}")
-    print(f"Latest file is {last_file}")
-    print(f"cout funds per sector over the whole data collection period {allSectorsInf.shape}")
+    print(f"# Total '*_TrustNetSectors.csv' files loaded: {totalSectorsInfFiles}")
+    print(f"Latest file is: {last_file}")
+    print(f"Count of funds per sector over the whole data collection period: {allSectorsInf.shape}")
     
     #=============================
     #                      3 first rows and 5 columns
@@ -141,16 +136,56 @@ if __name__ == "__main__":
         sectors_summary[a[0]]['Weekly'] = len(a[1])
     
     # Title
-    print(f"{'sector':<40}: {'funds':>4} {'Cases':>6} {sectorSelectedColumns}")
+    print(f"{'sector':<60}: {'funds':>4} {'Cases':>6} {sectorSelectedColumns}")
     for sector in sectors_summary:
         indx = last_sectorsInf.index[last_sectorsInf['sectorName']==sector]
         if len(indx)>0:
-            print(f"{sector:<40}: {sectors_summary[sector]['count']:>4} {sectors_summary[sector]['Weekly']:>6} [{last_sectorsInf.loc[indx, sectorSelectedColumns].to_string(index=False, header=False, col_space=7)}]")
+            print(f"{sector:<60}: {sectors_summary[sector]['count']:>4} {sectors_summary[sector]['Weekly']:>6} [{last_sectorsInf.loc[indx, sectorSelectedColumns].to_string(index=False, header=False, col_space=7)}]")
         elif isinstance(sectors_summary[sector]['count'], int):
-            print(f"{sector:<40}: {sectors_summary[sector]['count']:>4} {sectors_summary[sector]['Weekly']:>6}")
+            print(f"{sector:<60}: {sectors_summary[sector]['count']:>4} {sectors_summary[sector]['Weekly']:>6}")
     print(f"-- End of sectors summary.")
     print("\n")
     
+
+    # Group by sector and sort by 3m performance (descending)
+    grouped_by_sector = allFundsInf.groupby('Sector')
+
+    # Find the most recent date in the entire dataset
+    most_recent_date = allFundsInf['date'].max()
+
+    # Iterate over each sector
+    for sector, sector_data in grouped_by_sector:
+        
+        # Filter data for the most recent date
+        latest_date_in_sector = sector_data['date'].max()
+
+        # Check if the sector was updated on the most recent date
+        if latest_date_in_sector == most_recent_date:
+            latest_sector_data = sector_data[sector_data['date'] == latest_date_in_sector]
+
+            # Remove duplicates from the latest sector data (assuming all columns matter for uniqueness)
+            latest_sector_data = latest_sector_data.drop_duplicates() 
+
+            # Sort by 3m performance in descending order and get top 3
+            top_3_funds = latest_sector_data.sort_values('3m', ascending=False).head(3)
+            
+            # Check if any fund in top_3_funds has 'Hold' value of 1
+            has_holding = top_3_funds['Hold'].isin([1]).any()
+
+
+            # Print sector and date information
+            print(f"Sector: {sector}\t Sector-Holding:{has_holding}")
+            print(f"Date: {latest_date_in_sector.date()}")
+
+            # Print column headers
+            print("Name                                  Quartile  FERisk    3m    6m    1y    3y    5y  Hold         price             Holding%")
+
+            # Print information for each of the top 3 funds
+            for _, fund_data in top_3_funds.iterrows():
+                print(f"{fund_data['fundName']:<60} {fund_data['Quartile']:<9} {fund_data['FERisk']:<7} {fund_data['3m']:<6} {fund_data['6m']:<6} {fund_data['1y']:<6} {fund_data['3y']:<6} {fund_data['5y']:<6} {fund_data['Hold']:<6} {fund_data['price']:<18} {fund_data['Holding%']}")
+
+            print("\n")  # Add spacing between sectors
+
 
     #https://realpython.com/pandas-groupby/
     #groupedFundsList = allFundsInf.groupby(['Sector','fundName', 'date'], as_index=False)
