@@ -160,31 +160,38 @@ if __name__ == "__main__":
         latest_date_in_sector = sector_data['date'].max()
 
         # Check if the sector was updated on the most recent date
-        if latest_date_in_sector == most_recent_date:
-            latest_sector_data = sector_data[sector_data['date'] == latest_date_in_sector]
+        if not latest_date_in_sector == most_recent_date:
+            continue
+           
+        latest_sector_data = sector_data[sector_data['date'] == latest_date_in_sector]
 
-            # Remove duplicates from the latest sector data (assuming all columns matter for uniqueness)
-            latest_sector_data = latest_sector_data.drop_duplicates() 
+        # Remove duplicates from the latest sector data (assuming all columns matter for uniqueness)
+        latest_sector_data = latest_sector_data.drop_duplicates() 
 
-            # Sort by 3m performance in descending order and get top 3
-            top_3_funds = latest_sector_data.sort_values('3m', ascending=False).head(3)
-            
-            # Check if any fund in top_3_funds has 'Hold' value of 1
-            has_holding = top_3_funds['Hold'].isin([1]).any()
+        # Sort by 3m performance in descending order and get top 3
+        top_3_funds = latest_sector_data.sort_values('3m', ascending=False).head(3)
+        
+        # Filter held funds: Hold is '1' and Holding% is not nan
+        held_funds = latest_sector_data[(latest_sector_data['Hold'] == 1) & (~latest_sector_data['Holding%'].isna())]
 
+        # Combine top 3 and held funds, removing duplicates
+        combined_funds = pd.concat([top_3_funds, held_funds]).drop_duplicates()
+        
+        # Check if any fund in top_3_funds has 'Hold' value of 1
+        has_holding = combined_funds['Hold'].isin([1]).any()
 
-            # Print sector and date information
-            print(f"Sector: {sector}\t Sector-Holding:{has_holding}")
-            print(f"Date: {latest_date_in_sector.date()}")
+        # Print sector and date information
+        print(f"Sector: {sector}\t Sector-Holding:{has_holding}")
+        print(f"Date: {latest_date_in_sector.date()}")
 
-            # Print column headers
-            print("Name                                  Quartile  FERisk    3m    6m    1y    3y    5y  Hold         price             Holding%")
+        # Print column headers
+        print("Name                                  Quartile  FERisk    3m    6m    1y    3y    5y  Hold         price             Holding%")
 
-            # Print information for each of the top 3 funds
-            for _, fund_data in top_3_funds.iterrows():
-                print(f"{fund_data['fundName']:<60} {fund_data['Quartile']:<9} {fund_data['FERisk']:<7} {fund_data['3m']:<6} {fund_data['6m']:<6} {fund_data['1y']:<6} {fund_data['3y']:<6} {fund_data['5y']:<6} {fund_data['Hold']:<6} {fund_data['price']:<18} {fund_data['Holding%']}")
+        # Print information for each of the top 3 funds
+        for _, fund_data in combined_funds.iterrows():
+            print(f"{fund_data['fundName']:<60} {fund_data['Quartile']:<9} {fund_data['FERisk']:<7} {fund_data['3m']:<6} {fund_data['6m']:<6} {fund_data['1y']:<6} {fund_data['3y']:<6} {fund_data['5y']:<6} {fund_data['Hold']:<6} {fund_data['price']:<18} {fund_data['Holding%']}")
 
-            print("\n")  # Add spacing between sectors
+        print("\n")  # Add spacing between sectors
 
 
     #https://realpython.com/pandas-groupby/
